@@ -60,7 +60,7 @@ ADD forum/ $GOPATH/src/github.com/moleque/tp_db/forum/
 
 # Собираем и устанавливаем пакет
 # RUN go generate -x ./restapi
-# RUN go install ./cmd/hello-server
+RUN go install ./cmd/forum_api
 
 # Объявлем порт сервера
 EXPOSE 5000
@@ -69,4 +69,4 @@ EXPOSE 5000
 # ===============================
 # Запускаем PostgreSQL и сервер
 
-# CMD service postgresql start && hello-server --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && forum_api --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker

@@ -70,4 +70,4 @@ EXPOSE 5000
 # ===============================
 # Запускаем PostgreSQL и сервер
 
-CMD service postgresql start && ./forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && ./main --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker

@@ -53,8 +53,7 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 # Копируем исходный код в Docker-контейнер
 WORKDIR $GOPATH/src/github.com/moleque/tp_db
 ADD . $GOPATH/src/github.com/moleque/tp_db
-RUN cd $GOPATH/src/github.com/moleque/tp_db/forum
-RUN go build
+RUN go build ./forum/main.go
 
 # Собираем генераторы
 # RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger

@@ -17,10 +17,10 @@ USER postgres
 
 # Создание роли PostgreSQL с именем `docker` и паролем `docker`, 
 # затем создание базы данных `docker`, принадлежащей роли `docker`
-RUN /etc/init.d/postgresql start &&\
-    psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
-    createdb -O docker docker &&\
-    /etc/init.d/postgresql stop
+# RUN /etc/init.d/postgresql start &&\
+#     psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
+#     createdb -O docker docker &&\
+#     /etc/init.d/postgresql stop
 
 # Регулировка конфигурации PostgreSQL, чтобы можно было удаленно подключаться к базе данных
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf
@@ -51,8 +51,9 @@ ENV GOPATH /opt/go
 ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 
 # Копируем исходный код в Docker-контейнер
-WORKDIR $GOPATH/src/github.com/moleque/tp_db/forum
-ADD forum/ $GOPATH/src/github.com/moleque/tp_db/forum/
+WORKDIR $GOPATH/src/github.com/moleque/tp_db
+ADD . $GOPATH/src/github.com/moleque/tp_db
+RUN go build
 
 # Собираем генераторы
 # RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
@@ -60,7 +61,7 @@ ADD forum/ $GOPATH/src/github.com/moleque/tp_db/forum/
 
 # Собираем и устанавливаем пакет
 # RUN go generate -x ./restapi
-RUN go install ./cmd/forum_api
+# RUN go install ./cmd/forum
 
 # Объявлем порт сервера
 EXPOSE 5000
@@ -69,4 +70,4 @@ EXPOSE 5000
 # ===============================
 # Запускаем PostgreSQL и сервер
 
-CMD service postgresql start && forum_api --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && ./forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker

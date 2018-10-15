@@ -12,6 +12,8 @@ func main() {
 		fmt.Println("Docker test!")
 	})
 
-	log.Println("Server started!")
-	http.ListenAndServe(":5000", mux)
+	log.Printf("Try to start http server http://127.0.0.1:5000")
+	if err := http.ListenAndServe(":5000", mux); err != nil {
+		log.Fatalf("listening error:%s", err)
+	}
 }

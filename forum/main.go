@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"tp_db/forum/db"
-
-	"github.com/julienschmidt/httprouter"
+	"tp_db/forum/controllers"
 )
 
 const (
@@ -15,69 +13,10 @@ const (
 	DB_NAME     = "forum"
 )
 
-var DB = &db.DataBase{}
-
-type User struct {
-	Nickname string `json:"nickname,omitempty"`
-	Fullname string `json:"fullname"`
-	About    string `json:"about,omitempty"`
-	Email    string `json:"email"`
-}
-
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "Welcome!\n")
-}
-
-// func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	fmt.Fprintf(w, "test, %s\n", params.ByName("value"))
-// }
-
-// func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	fmt.Fprintf(w, "test, %s\n", params.ByName("value"))
-// }
-
-func ForumDetails(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	log.Println("was queried0")
-	rows, err := DB.Query("Select nickname, fullname, about, email From users")
-	log.Println("was queried1")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	log.Println("was queried")
-
-	for rows.Next() {
-		user := &User{}
-		err = rows.Scan(&user.Nickname, &user.Fullname, &user.About, &user.Email)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println(user.Email)
-	}
-}
-
-func ThreadsList(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	fmt.Fprintf(w, "Thread list for: %s\n", params.ByName("slug"))
-}
-
-// func UsersList(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	fmt.Fprintf(w, "test, %s\n", params.ByName("value"))
-// }
-
-// func ThreadInfo(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	fmt.Fprintf(w, "test, %s\n", params.ByName("value"))
-// }
+var DB = &controllers.DataBase{}
 
 func main() {
-	router := httprouter.New()
-
-	router.GET("/", Index)
-	// router.POST("/forum/create", ForumCreate)
-	// router.POST("/forum/:slug/create", ThreadCreate)
-	router.GET("/forum/:slug/details", ForumDetails)
-	router.GET("/forum/:slug/threads", ThreadsList)
-	// router.GET("/forum/:slug/users", UsersList)
-	// router.GET("/post/:id/details", ThreadInfo)
+	router := controllers.NewRouter()
 
 	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
 	DB.Connect(dsn)

@@ -1,4 +1,4 @@
-package db
+package controllers
 
 import (
 	"database/sql"

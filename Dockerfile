@@ -15,12 +15,15 @@ RUN apt-get install -y postgresql-$PGVER
 # Запуск остальных команд под пользователем `postgres`, созданным пакетом `postgres-$PGVER` при установке
 USER postgres
 
+COPY database/creator.sql database/creator.sql
+
 # Создание роли PostgreSQL с именем `docker` и паролем `docker`, 
 # затем создание базы данных `docker`, принадлежащей роли `docker`
-# RUN /etc/init.d/postgresql start &&\
-#     psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
-#     createdb -O docker docker &&\
-#     /etc/init.d/postgresql stop
+RUN /etc/init.d/postgresql start &&\
+    # psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
+    # createdb -O docker docker &&\
+    psql -a -f database/creator.sql &&\
+    /etc/init.d/postgresql stop
 
 # Регулировка конфигурации PostgreSQL, чтобы можно было удаленно подключаться к базе данных
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf

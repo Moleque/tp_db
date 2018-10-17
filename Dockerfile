@@ -15,7 +15,7 @@ RUN apt-get install -y postgresql-$PGVER
 # Запуск остальных команд под пользователем `postgres`, созданным пакетом `postgres-$PGVER` при установке
 USER postgres
 
-COPY database/creator.sql database/creator.sql
+# COPY database/creator.sql database/creator.sql
 
 # Создание роли PostgreSQL с именем `docker` и паролем `docker`, 
 # затем создание базы данных `docker`, принадлежащей роли `docker`

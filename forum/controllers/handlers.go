@@ -1,8 +1,22 @@
 package controllers
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
+
+	"github.com/Moleque/tp_db/forum/models"
 )
+
+// func decode(body, request interface{}) {
+// 	decoder := json.NewDecoder(body)
+// 	err := decoder.Decode(request)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		return
+// 	}
+// 	body.Close()
+// }
 
 func Clear(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -11,6 +25,36 @@ func Clear(w http.ResponseWriter, r *http.Request) {
 
 func ForumCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
+	forum := &models.Forum{}
+	// decode(r.Body, forum)
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(forum)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	r.Body.Close()
+
+	forum.Posts = 0
+	forum.Threads = 0
+
+	jsonForum, err := json.Marshal(&forum)
+	if err != nil {
+		log.Printf("cannot marshal:%s", err)
+	}
+	w.Write(jsonForum)
+	// if _, exists := users[request.Email]; exists == false {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	w.Write([]byte("No have this user"))
+	// 	return
+	// }
+	// if users[request.Email].Password != request.Password {
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	w.Write([]byte("Wrong password"))
+	// 	return
+	// }
+
 	w.WriteHeader(http.StatusOK)
 }
 

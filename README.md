@@ -7,5 +7,5 @@
 
 Запуск Docker-контейнера:
 
-docker run -p 5000:5000 --name tp_bd -t d.salman </code>
+<code> docker run -p 5000:5000 --name tp_bd -t d.salman </code>
 

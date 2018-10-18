@@ -118,38 +118,39 @@ func ThreadVote(w http.ResponseWriter, r *http.Request) {
 //=======================
 const createUser = `
 	INSERT INTO users (email, nickname, fullname, about)
-	VALUES ($1, $2, $3, $4) RETURNING *`
+	VALUES ($1, $2, $3, $4) RETURNING email, nickname, fullname, about`
 
-const selectUserByNickname = `
+const selectUser = `
 	SELECT email, nickname, fullname, about
 	FROM users
-	WHERE nickname = $1`
+	WHERE nickname = $1 AND email = $2`
 
 func UserCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	nickname := mux.Vars(r)["nickname"]
 	user := &models.User{}
 	if decode(r.Body, user) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	rows, err := DB.Query(createUser, user.Email, mux.Vars(r)["nickname"], user.Fullname, user.About)
-	// rows.Next()
-	rows.Scan()
+
+	err := DB.QueryRow(createUser, user.Email, nickname, user.Fullname, user.About).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
 	if err, ok := err.(*pq.Error); ok {
+		log.Println(err.Code.Name())
 		if err.Code.Name() == "unique_violation" {
-			w.WriteHeader(http.StatusConflict)
-			return
-		} else {
-			w.WriteHeader(http.StatusBadGateway)
-			return
+			if DB.QueryRow(selectUser, nickname, user.Email).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About) == nil {
+				jsonUser, _ := json.Marshal(user)
+				w.WriteHeader(http.StatusConflict)
+				w.Write(jsonUser)
+				return
+			}
 		}
+		w.WriteHeader(http.StatusBadGateway)
+		return
 	}
 
-	jsonUser, err := json.Marshal(user)
-	if err != nil {
-		log.Printf("cannot marshal:%s", err)
-	}
-	w.Write(jsonUser)
+	jsonUser, _ := json.Marshal(user)
 	w.WriteHeader(http.StatusCreated)
+	w.Write(jsonUser)
 }
 
 func UserGetOne(w http.ResponseWriter, r *http.Request) {

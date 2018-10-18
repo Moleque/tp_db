@@ -42,3 +42,10 @@ func (db *DataBase) Query(query string, args ...interface{}) (*sql.Rows, error) 
 	}
 	return db.instance.Query(query, args...)
 }
+
+func (db *DataBase) QueryRow(query string, args ...interface{}) *sql.Row {
+	if !db.connection {
+		return nil
+	}
+	return db.instance.QueryRow(query, args...)
+}

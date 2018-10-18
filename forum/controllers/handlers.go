@@ -7,13 +7,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
+	"github.com/lib/pq"
+
 	"tp_db/forum/models"
 )
-
-//=======================
-const createForum = `
-INSERT INTO forums (slug, title, username)
-VALUES ($1, $2, $3);`
 
 //=======================
 
@@ -36,14 +34,18 @@ func Clear(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+//=======================
+const createForum = `
+INSERT INTO forums (slug, title, username)
+VALUES ($1, $2, $3) RETURNING *`
+
 func ForumCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := &models.Forum{}
 	if decode(r.Body, forum) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	rows := DB.instance.QueryRow(createForum, forum.Slug, forum.Title, forum.User)
-	log.Println(rows)
+	DB.Query(createForum, forum.Slug, forum.Title, forum.User)
 
 	jsonForum, err := json.Marshal(forum)
 	if err != nil {
@@ -113,9 +115,41 @@ func ThreadVote(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+//=======================
+const createUser = `
+	INSERT INTO users (email, nickname, fullname, about)
+	VALUES ($1, $2, $3, $4) RETURNING *`
+
+const selectUserByNickname = `
+	SELECT email, nickname, fullname, about
+	FROM users
+	WHERE nickname = $1`
+
 func UserCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	user := &models.User{}
+	if decode(r.Body, user) != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	rows, err := DB.Query(createUser, user.Email, mux.Vars(r)["nickname"], user.Fullname, user.About)
+	// rows.Next()
+	rows.Scan()
+	if err, ok := err.(*pq.Error); ok {
+		if err.Code.Name() == "unique_violation" {
+			w.WriteHeader(http.StatusConflict)
+			return
+		} else {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+	}
+
+	jsonUser, err := json.Marshal(user)
+	if err != nil {
+		log.Printf("cannot marshal:%s", err)
+	}
+	w.Write(jsonUser)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func UserGetOne(w http.ResponseWriter, r *http.Request) {

@@ -12,3 +12,10 @@ VALUES (4, 'espiao@yandex.ru', 'Espiao', 'Pasha Salman', 'Hello');
 
 INSERT INTO users (id, email, nickname, fullname, about)
 VALUES (5, 'cueca@gmail.com', 'Cueca', 'Timor', '');
+
+-- ///////////////////////////////////
+INSERT INTO forums (id, slug, title, user_id, threads, posts)
+VALUES (2, 'capoeira', 'Capoeirando', 1, 0, 0);
+
+INSERT INTO forums (slug, title, user_id)
+VALUES ('sdf', 'Capoeirando', 1);

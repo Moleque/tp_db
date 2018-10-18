@@ -13,6 +13,8 @@ type DataBase struct {
 	connection bool
 }
 
+var DB = &DataBase{}
+
 func (db *DataBase) Connect(dsn string) {
 	var err error
 	db.instance, err = sql.Open("postgres", dsn)

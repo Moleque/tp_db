@@ -2,21 +2,30 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 
-	"github.com/Moleque/tp_db/forum/models"
+	"tp_db/forum/models"
 )
 
-// func decode(body, request interface{}) {
-// 	decoder := json.NewDecoder(body)
-// 	err := decoder.Decode(request)
-// 	if err != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		return
-// 	}
-// 	body.Close()
-// }
+//=======================
+const createForum = `
+INSERT INTO forums (slug, title, username)
+VALUES ($1, $2, $3);`
+
+//=======================
+
+func decode(body io.ReadCloser, request interface{}) error {
+	decoder := json.NewDecoder(body)
+	err := decoder.Decode(request)
+	if err != nil {
+		return fmt.Errorf("decode error:", err)
+	}
+	body.Close()
+	return nil
+}
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the forum!")
@@ -28,47 +37,24 @@ func Clear(w http.ResponseWriter, r *http.Request) {
 }
 
 func ForumCreate(w http.ResponseWriter, r *http.Request) {
-	log.Println("forum")
-	fmt.Fprintf(w, "Hi forum!")
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := &models.Forum{}
-	// decode(r.Body, forum)
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(forum)
-	if err != nil {
+	if decode(r.Body, forum) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-	r.Body.Close()
+	rows := DB.instance.QueryRow(createForum, forum.Slug, forum.Title, forum.User)
+	log.Println(rows)
 
-	log.Println("sdaf")
-	forum.Posts = 0
-	forum.Threads = 0
-
-	log.Println(forum.)
-
-	jsonForum, err := json.Marshal(&forum)
+	jsonForum, err := json.Marshal(forum)
 	if err != nil {
 		log.Printf("cannot marshal:%s", err)
 	}
 	w.Write(jsonForum)
-	// if _, exists := users[request.Email]; exists == false {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("No have this user"))
-	// 	return
-	// }
-	// if users[request.Email].Password != request.Password {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte("Wrong password"))
-	// 	return
-	// }
-
 	w.WriteHeader(http.StatusOK)
 }
 
 func ForumGetOne(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	fmt.Fprintf(w, "Hi forum!")
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 

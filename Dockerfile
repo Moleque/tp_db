@@ -15,14 +15,14 @@ RUN apt-get install -y postgresql-$PGVER
 # Запуск остальных команд под пользователем `postgres`, созданным пакетом `postgres-$PGVER` при установке
 USER postgres
 
-# COPY database/creator.sql database/creator.sql
+COPY database/create.sql database/create.sql
 
 # Создание роли PostgreSQL с именем `docker` и паролем `docker`, 
 # затем создание базы данных `docker`, принадлежащей роли `docker`
 RUN /etc/init.d/postgresql start &&\
     # psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
     # createdb -O docker docker &&\
-    psql -a -f database/creator.sql &&\
+    psql -a -f database/create.sql &&\
     /etc/init.d/postgresql stop
 
 # Регулировка конфигурации PostgreSQL, чтобы можно было удаленно подключаться к базе данных
@@ -56,6 +56,7 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 # Копируем исходный код в Docker-контейнер
 WORKDIR $GOPATH/src/github.com/moleque/tp_db
 ADD . $GOPATH/src/github.com/moleque/tp_db
+RUN go get github.com/Moleque/tp_db/forum/controllers
 RUN go build ./forum/main.go
 
 # Собираем генераторы

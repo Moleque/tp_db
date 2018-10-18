@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"tp_db/forum/controllers"
+
+	"github.com/Moleque/tp_db/forum/controllers"
 )
 
 const (

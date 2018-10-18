@@ -18,14 +18,19 @@ import (
 // 	body.Close()
 // }
 
+func Index(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the forum!")
+}
+
 func Clear(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
 func ForumCreate(w http.ResponseWriter, r *http.Request) {
+	log.Println("forum")
+	fmt.Fprintf(w, "Hi forum!")
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-
 	forum := &models.Forum{}
 	// decode(r.Body, forum)
 	decoder := json.NewDecoder(r.Body)
@@ -36,8 +41,11 @@ func ForumCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body.Close()
 
+	log.Println("sdaf")
 	forum.Posts = 0
 	forum.Threads = 0
+
+	log.Println(forum.)
 
 	jsonForum, err := json.Marshal(&forum)
 	if err != nil {
@@ -59,7 +67,8 @@ func ForumCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func ForumGetOne(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	// w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	fmt.Fprintf(w, "Hi forum!")
 	w.WriteHeader(http.StatusOK)
 }
 

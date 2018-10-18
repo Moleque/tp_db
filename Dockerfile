@@ -20,8 +20,9 @@ COPY database/create.sql database/create.sql
 # Создание роли PostgreSQL с именем `docker` и паролем `docker`, 
 # затем создание базы данных `docker`, принадлежащей роли `docker`
 RUN /etc/init.d/postgresql start &&\
-    # psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
-    # createdb -O docker docker &&\
+    psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
+    createdb -O docker docker &&\
+    # psql --command "CREATE DATABASE docker;" &&\
     psql -a -f database/create.sql &&\
     /etc/init.d/postgresql stop
 

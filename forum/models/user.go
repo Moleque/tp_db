@@ -34,26 +34,6 @@ type User struct {
 // 	}
 // }
 
-// func ForumDetails(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	log.Println("was queried0")
-// 	rows, err := DB.Query("Select nickname, fullname, about, email From users")
-// 	log.Println("was queried1")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer rows.Close()
-// 	log.Println("was queried")
-
-// 	for rows.Next() {
-// 		user := &User{}
-// 		err = rows.Scan(&user.Nickname, &user.Fullname, &user.About, &user.Email)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		log.Println(user.Email)
-// 	}
-// }
-
 const createUser = `
 	INSERT INTO users (email, nickname, fullname, about)
 	VALUES ($1, $2, $3, $4) RETURNING email, nickname, fullname, about`

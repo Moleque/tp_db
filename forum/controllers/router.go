@@ -47,7 +47,7 @@ var routes = Routes{
 		"ForumCreate",
 		strings.ToUpper("Post"),
 		"/api/forum/create",
-		ForumCreate,
+		models.ForumCreate,
 	},
 
 	Route{

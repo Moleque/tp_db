@@ -1,33 +1,28 @@
 package controllers
 
 import (
-	"net/http"
 	"strings"
 
-	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 )
 
 type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc http.HandlerFunc
+	HandlerFunc httprouter.Handle
 }
 
 type Routes []Route
 
-func NewRouter() *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
+func NewRouter() *httprouter.Router {
+	router := httprouter.New()
+	router.RedirectTrailingSlash = true
 	for _, route := range routes {
-		var handler http.Handler
+		var handler httprouter.Handle
 		handler = route.HandlerFunc
 		handler = Logger(handler, route.Name)
-
-		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler)
+		router.Handle(route.Method, route.Pattern, handler)
 	}
 	return router
 }

@@ -4,12 +4,14 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/julienschmidt/httprouter"
 )
 
-func Logger(inner http.Handler, name string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Logger(inner httprouter.Handle, name string) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		start := time.Now()
-		inner.ServeHTTP(w, r)
+		inner(w, r, params)
 		log.Printf(
 			"%s %s %s %s",
 			r.Method,

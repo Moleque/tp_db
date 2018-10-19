@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	// "github.com/gorilla/mux"
 	"github.com/gorilla/mux"
+	"github.com/julienschmidt/httprouter"
 	"github.com/lib/pq"
 
 	"tp_db/forum/models"
@@ -25,11 +27,11 @@ func decode(body io.ReadCloser, request interface{}) error {
 	return nil
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	fmt.Fprintf(w, "Welcome to the forum!")
 }
 
-func Clear(w http.ResponseWriter, r *http.Request) {
+func Clear(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
@@ -39,7 +41,7 @@ const createForum = `
 INSERT INTO forums (slug, title, username)
 VALUES ($1, $2, $3) RETURNING *`
 
-func ForumCreate(w http.ResponseWriter, r *http.Request) {
+func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := &models.Forum{}
 	if decode(r.Body, forum) != nil {
@@ -55,62 +57,62 @@ func ForumCreate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func ForumGetOne(w http.ResponseWriter, r *http.Request) {
+func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ForumGetThreads(w http.ResponseWriter, r *http.Request) {
+func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ForumGetUsers(w http.ResponseWriter, r *http.Request) {
+func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func PostGetOne(w http.ResponseWriter, r *http.Request) {
+func PostGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func PostUpdate(w http.ResponseWriter, r *http.Request) {
+func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func PostsCreate(w http.ResponseWriter, r *http.Request) {
+func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func Status(w http.ResponseWriter, r *http.Request) {
+func Status(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ThreadCreate(w http.ResponseWriter, r *http.Request) {
+func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ThreadGetOne(w http.ResponseWriter, r *http.Request) {
+func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ThreadGetPosts(w http.ResponseWriter, r *http.Request) {
+func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ThreadUpdate(w http.ResponseWriter, r *http.Request) {
+func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func ThreadVote(w http.ResponseWriter, r *http.Request) {
+func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
@@ -125,7 +127,7 @@ const selectUser = `
 	FROM users
 	WHERE nickname = $1 AND email = $2`
 
-func UserCreate(w http.ResponseWriter, r *http.Request) {
+func UserCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	nickname := mux.Vars(r)["nickname"]
 	user := &models.User{}
@@ -153,12 +155,12 @@ func UserCreate(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonUser)
 }
 
-func UserGetOne(w http.ResponseWriter, r *http.Request) {
+func UserGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func UserUpdate(w http.ResponseWriter, r *http.Request) {
+func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }

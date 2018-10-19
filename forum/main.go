@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"tp_db/forum/controllers"
+	"tp_db/forum/database"
 )
 
 const (
@@ -18,8 +19,8 @@ func main() {
 	router := controllers.NewRouter()
 
 	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
-	controllers.DB.Connect(dsn)
-	defer controllers.DB.Disconnect()
+	database.DB.Connect(dsn)
+	defer database.DB.Disconnect()
 
 	log.Printf("try to start http server http://127.0.0.1:5000")
 	if err := http.ListenAndServe(":5000", router); err != nil {

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"strings"
+	"tp_db/forum/models"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -136,21 +137,21 @@ var routes = Routes{
 	Route{
 		"UserCreate",
 		strings.ToUpper("Post"),
-		"/api/user/{nickname}/create",
-		UserCreate,
+		"/api/user/:nickname/create",
+		models.UserCreate,
 	},
 
 	Route{
 		"UserGetOne",
 		strings.ToUpper("Get"),
-		"/api/user/{nickname}/profile",
+		"/api/user/:nickname/profile",
 		UserGetOne,
 	},
 
 	Route{
 		"UserUpdate",
 		strings.ToUpper("Post"),
-		"/api/user/{nickname}/profile",
+		"/api/user/:nickname/profile",
 		UserUpdate,
 	},
 }

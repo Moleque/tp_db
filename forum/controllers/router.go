@@ -145,13 +145,13 @@ var routes = Routes{
 		"UserGetOne",
 		strings.ToUpper("Get"),
 		"/api/user/:nickname/profile",
-		UserGetOne,
+		models.UserGetOne,
 	},
 
 	Route{
 		"UserUpdate",
 		strings.ToUpper("Post"),
 		"/api/user/:nickname/profile",
-		UserUpdate,
+		models.UserUpdate,
 	},
 }

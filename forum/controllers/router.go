@@ -54,7 +54,7 @@ var routes = Routes{
 		"ForumGetOne",
 		strings.ToUpper("Get"),
 		"/api/forum/{slug}/details",
-		ForumGetOne,
+		models.ForumGetOne,
 	},
 
 	Route{

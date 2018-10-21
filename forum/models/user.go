@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"tp_db/forum/database"
@@ -31,16 +32,23 @@ const selectUserByNickname = `
 	FROM users
 	WHERE nickname = $1`
 
+const selectNicknameByEmail = `
+	SELECT nickname
+	FROM users
+	WHERE email = $1`
+
 const updateUser = `
 	UPDATE users 
-	SET	email = $1, fullname = $2, about = $3
+	SET	email = COALESCE($1, email), 
+		fullname = COALESCE($2, fullname),	
+		about = COALESCE($3, about)
 	WHERE nickname = $4
 	RETURNING email, nickname, fullname, about`
 
 func UserCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	nickname := params.ByName("nickname")
-	if ok, _ := regexp.MatchString("^[a-zA-Z0-9_.]*$", nickname); !ok {
+	if ok, _ := regexp.MatchString("^[A-z0-9_.]*$", nickname); !ok {
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
@@ -81,9 +89,9 @@ func UserGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	user := &User{}
 	if database.DB.QueryRow(selectUserByNickname, nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About) != nil {
-		message := Error{"Can't find user with id #42\n"}
+		message := Error{"Can't find user by nickname:" + nickname}
 		jsonMessage, _ := json.Marshal(message)
-		w.WriteHeader(http.StatusConflict)
+		w.WriteHeader(http.StatusNotFound)
 		w.Write(jsonMessage)
 		return
 	}
@@ -103,7 +111,19 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	}
 
 	err := database.DB.QueryRow(updateUser, user.Email, user.Fullname, user.About, nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	if _, ok := err.(*pq.Error); ok {
+	log.Println(user.Email)
+	if err, ok := err.(*pq.Error); ok {
+		log.Println(err.Code.Name())
+		if err.Code.Name() == "unique_violation" {
+			var emailOwner string
+			if database.DB.QueryRow(selectNicknameByEmail, user.Email).Scan(&emailOwner) == nil {
+				message := Error{"Can't find user by nickname:" + emailOwner}
+				jsonMessage, _ := json.Marshal(message)
+				w.WriteHeader(http.StatusConflict)
+				w.Write(jsonMessage)
+				return
+			}
+		}
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}

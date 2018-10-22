@@ -102,6 +102,13 @@ func UserGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params
 }
 
 func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	// type UserT struct {
+	// 	Nickname string         `json:"nickname,omitempty"`
+	// 	Fullname sql.NullString `json:"fullname"`
+	// 	About    string         `json:"about,omitempty"`
+	// 	Email    string         `json:"email"`
+	// }
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	nickname := params.ByName("nickname")
 
@@ -110,8 +117,7 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	err := database.DB.QueryRow(updateUser, user.Email, user.Fullname, user.About, nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	log.Println(user.Email)
+	err := database.DB.QueryRow(updateUser, isEmpty(user.Email), isEmpty(user.Fullname), isEmpty(user.About), nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
 	if err, ok := err.(*pq.Error); ok {
 		log.Println(err.Code.Name())
 		if err.Code.Name() == "unique_violation" {
@@ -125,6 +131,13 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 			}
 		}
 		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	if user.Nickname != nickname {
+		message := Error{"Can't find user by nickname:" + nickname}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
 		return
 	}
 	jsonUser, _ := json.Marshal(user)

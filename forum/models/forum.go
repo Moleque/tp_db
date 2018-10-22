@@ -6,6 +6,7 @@ import (
 	"tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/lib/pq"
 )
 
 type Forum struct {
@@ -17,46 +18,13 @@ type Forum struct {
 }
 
 const createForum = `
-INSERT INTO forums (slug, title, username)
-VALUES ($1, $2, $3) RETURNING slug, title, username, threads, posts`
+	INSERT INTO forums (slug, title, username)
+	VALUES ($1, $2, $3) RETURNING slug, title, username, threads, posts`
 
-// func UserCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-// 	nickname := params.ByName("nickname")
-// 	if ok, _ := regexp.MatchString("^[A-z0-9_.]*$", nickname); !ok {
-// 		w.WriteHeader(http.StatusBadGateway)
-// 		return
-// 	}
-
-// 	user := &User{}
-// 	if decode(r.Body, user) != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 	}
-
-// 	err := database.DB.QueryRow(createUser, user.Email, nickname, user.Fullname, user.About).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About, &)
-// 	if err, ok := err.(*pq.Error); ok {
-// 		if err.Code.Name() == "unique_violation" {
-// 			if rows, err := database.DB.Query(selectUser, nickname, user.Email); err == nil {
-// 				defer rows.Close()
-// 				users := []*User{}
-// 				for rows.Next() {
-// 					user := &User{}
-// 					rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-// 					users = append(users, user)
-// 				}
-// 				jsonUsers, _ := json.Marshal(users)
-// 				w.WriteHeader(http.StatusConflict)
-// 				w.Write(jsonUsers)
-// 				return
-// 			}
-// 		}
-// 		w.WriteHeader(http.StatusBadGateway)
-// 		return
-// 	}
-// 	jsonUser, _ := json.Marshal(user)
-// 	w.WriteHeader(http.StatusCreated)
-// 	w.Write(jsonUser)
-// }
+const selectForum = `
+	SELECT slug, title, username, threads, posts
+	FROM forums
+	WHERE slug = $1`
 
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -65,9 +33,28 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	// err :=
-	database.DB.QueryRow(createForum, forum.Slug, forum.Title, forum.User).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+	result, err := database.DB.Exec(selectUserByNickname, forum.User)
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		message := Error{"Can't find user by nickname:" + forum.User}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
+	}
 
+	err = database.DB.QueryRow(createForum, forum.Slug, forum.Title, forum.User).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+	if err, ok := err.(*pq.Error); ok {
+		if err.Code.Name() == "unique_violation" {
+			if database.DB.QueryRow(selectForum, forum.Slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) == nil {
+				jsonForum, _ := json.Marshal(forum)
+				w.WriteHeader(http.StatusConflict)
+				w.Write(jsonForum)
+				return
+			}
+		}
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
 	jsonForum, _ := json.Marshal(forum)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonForum)

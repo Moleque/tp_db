@@ -15,3 +15,11 @@ func decode(body io.ReadCloser, request interface{}) error {
 	body.Close()
 	return nil
 }
+
+func isEmpty(str string) interface{} {
+	if str == "" {
+		return nil
+	} else {
+		return str
+	}
+}

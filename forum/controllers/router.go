@@ -42,14 +42,14 @@ var routes = Routes{
 		"/api/service/clear",
 		Clear,
 	},
-
+	//==================
 	Route{
 		"ForumCreate",
 		strings.ToUpper("Post"),
-		"/api/forum/create",
-		models.ForumCreate,
+		"/api/forum/:path1",
+		models.Creator,
 	},
-
+	//=======================
 	Route{
 		"ForumGetOne",
 		strings.ToUpper("Get"),
@@ -98,14 +98,14 @@ var routes = Routes{
 		"/api/service/status",
 		models.Status,
 	},
-
+	//=========================
 	Route{
 		"ThreadCreate",
 		strings.ToUpper("Post"),
-		"/api/forum/:slug/create",
-		models.ThreadCreate,
+		"/api/forum/:path1/:path2",
+		models.Creator,
 	},
-
+	//=======================
 	Route{
 		"ThreadGetOne",
 		strings.ToUpper("Get"),

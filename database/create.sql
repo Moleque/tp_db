@@ -30,8 +30,8 @@ CREATE TABLE threads (
     created timestamptz DEFAULT NOW(),
     title text NOT NULL,
     message text DEFAULT NULL,
-    username integer NOT NULL,
-    -- forum_id integer NOT NULL,
+    username citext NOT NULL,
+    forum citext NOT NULL,
     votes integer DEFAULT 0
 );
 

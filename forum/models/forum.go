@@ -33,8 +33,8 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	result, err := database.DB.Exec(selectUserByNickname, forum.User)
-	if affected, _ := result.RowsAffected(); affected != 1 {
+	var nickname, temp string
+	if database.DB.QueryRow(selectUserByNickname, forum.User).Scan(&temp, &nickname, &temp, &temp) != nil {
 		message := Error{"Can't find user by nickname:" + forum.User}
 		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
@@ -42,7 +42,7 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	err = database.DB.QueryRow(createForum, forum.Slug, forum.Title, forum.User).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+	err := database.DB.QueryRow(createForum, forum.Slug, forum.Title, nickname).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
 	if err, ok := err.(*pq.Error); ok {
 		if err.Code.Name() == "unique_violation" {
 			if database.DB.QueryRow(selectForum, forum.Slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) == nil {
@@ -62,7 +62,20 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	slug := params.ByName("slug")
+
+	forum := &Forum{}
+	if database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) != nil {
+		message := Error{"Can't find user by nickname:" + slug}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
+	}
+
+	jsonForum, _ := json.Marshal(forum)
 	w.WriteHeader(http.StatusOK)
+	w.Write(jsonForum)
 }
 
 // func ForumDetails(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

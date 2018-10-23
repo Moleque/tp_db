@@ -53,85 +53,85 @@ var routes = Routes{
 	Route{
 		"ForumGetOne",
 		strings.ToUpper("Get"),
-		"/api/forum/{slug}/details",
+		"/api/forum/:slug/details",
 		models.ForumGetOne,
 	},
 
 	Route{
 		"ForumGetThreads",
 		strings.ToUpper("Get"),
-		"/api/forum/{slug}/threads",
-		ForumGetThreads,
+		"/api/forum/:slug/threads",
+		models.ForumGetThreads,
 	},
 
 	Route{
 		"ForumGetUsers",
 		strings.ToUpper("Get"),
-		"/api/forum/{slug}/users",
-		ForumGetUsers,
+		"/api/forum/:slug/users",
+		models.ForumGetUsers,
 	},
 
 	Route{
 		"PostGetOne",
 		strings.ToUpper("Get"),
-		"/api/post/{id}/details",
-		PostGetOne,
+		"/api/post/:id/details",
+		models.PostGetOne,
 	},
 
 	Route{
 		"PostUpdate",
 		strings.ToUpper("Post"),
-		"/api/post/{id}/details",
-		PostUpdate,
+		"/api/post/:id/details",
+		models.PostUpdate,
 	},
 
 	Route{
 		"PostsCreate",
 		strings.ToUpper("Post"),
-		"/api/thread/{slug_or_id}/create",
-		PostsCreate,
+		"/api/thread/:slug_or_id/create",
+		models.PostsCreate,
 	},
 
 	Route{
 		"Status",
 		strings.ToUpper("Get"),
 		"/api/service/status",
-		Status,
+		models.Status,
 	},
 
 	Route{
 		"ThreadCreate",
 		strings.ToUpper("Post"),
-		"/api/forum/{slug}/create",
-		ThreadCreate,
+		"/api/forum/:slug/create",
+		models.ThreadCreate,
 	},
 
 	Route{
 		"ThreadGetOne",
 		strings.ToUpper("Get"),
-		"/api/thread/{slug_or_id}/details",
-		ThreadGetOne,
+		"/api/thread/:slug_or_id/details",
+		models.ThreadGetOne,
 	},
 
 	Route{
 		"ThreadGetPosts",
 		strings.ToUpper("Get"),
-		"/api/thread/{slug_or_id}/posts",
-		ThreadGetPosts,
+		"/api/thread/:slug_or_id/posts",
+		models.ThreadGetPosts,
 	},
 
 	Route{
 		"ThreadUpdate",
 		strings.ToUpper("Post"),
-		"/api/thread/{slug_or_id}/details",
-		ThreadUpdate,
+		"/api/thread/:slug_or_id/details",
+		models.ThreadUpdate,
 	},
 
 	Route{
 		"ThreadVote",
 		strings.ToUpper("Post"),
-		"/api/thread/{slug_or_id}/vote",
-		ThreadVote,
+		"/api/thread/:slug_or_id/vote",
+		models.ThreadVote,
 	},
 
 	Route{

@@ -97,3 +97,8 @@ func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Param
 // 		log.Println(user.Email)
 // 	}
 // }
+
+func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+}

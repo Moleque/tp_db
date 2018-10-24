@@ -42,14 +42,16 @@ var routes = Routes{
 		"/api/service/clear",
 		Clear,
 	},
-	//==================
+
+	// =============
+	// === Forum ===
 	Route{
 		"ForumCreate",
 		strings.ToUpper("Post"),
 		"/api/forum/:path1",
 		models.Creator,
 	},
-	//=======================
+
 	Route{
 		"ForumGetOne",
 		strings.ToUpper("Get"),
@@ -71,6 +73,8 @@ var routes = Routes{
 		models.ForumGetUsers,
 	},
 
+	// ============
+	// === Post ===
 	Route{
 		"PostGetOne",
 		strings.ToUpper("Get"),
@@ -98,14 +102,16 @@ var routes = Routes{
 		"/api/service/status",
 		models.Status,
 	},
-	//=========================
+
+	// ==============
+	// === Thread ===
 	Route{
 		"ThreadCreate",
 		strings.ToUpper("Post"),
 		"/api/forum/:path1/:path2",
 		models.Creator,
 	},
-	//=======================
+
 	Route{
 		"ThreadGetOne",
 		strings.ToUpper("Get"),
@@ -134,6 +140,8 @@ var routes = Routes{
 		models.ThreadVote,
 	},
 
+	// ============
+	// === User ===
 	Route{
 		"UserCreate",
 		strings.ToUpper("Post"),

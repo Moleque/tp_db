@@ -78,6 +78,7 @@ func UserCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
+
 	jsonUser, _ := json.Marshal(user)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonUser)
@@ -102,13 +103,6 @@ func UserGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params
 }
 
 func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	// type UserT struct {
-	// 	Nickname string         `json:"nickname,omitempty"`
-	// 	Fullname sql.NullString `json:"fullname"`
-	// 	About    string         `json:"about,omitempty"`
-	// 	Email    string         `json:"email"`
-	// }
-
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	nickname := params.ByName("nickname")
 

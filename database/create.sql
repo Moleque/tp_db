@@ -40,9 +40,10 @@ CREATE TABLE posts (
     created timestamptz DEFAULT NOW(),
     isedited boolean DEFAULT FALSE,
     message text DEFAULT NULL,
-    user_id integer NOT NULL,
-    parents integer DEFAULT NULL,
-    thread_id integer NOT NULL
+    username citext NOT NULL,
+    forum citext NOT NULL,
+    parent integer DEFAULT NULL,
+    thread integer NOT NULL
 );
 
 CREATE TABLE votes (

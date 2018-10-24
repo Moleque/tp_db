@@ -98,6 +98,41 @@ func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Param
 // 	}
 // }
 
+func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	forum := params.ByName("slug")
+
+	var count int
+	database.DB.QueryRow(countThread, forum).Scan(&count)
+	if count == 0 {
+		message := Error{"Can't find forum by slug:" + forum}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
+	}
+
+	query := paramsGetThreads(selectThread, r)
+
+	rows, err := database.DB.Query(query, forum)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+
+	defer rows.Close()
+	threads := []*Thread{}
+	for rows.Next() {
+		thread := &Thread{}
+		rows.Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+		threads = append(threads, thread)
+	}
+	jsonThreads, _ := json.Marshal(threads)
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonThreads)
+	return
+}
+
 func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)

@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 	"tp_db/forum/database"
@@ -22,37 +23,54 @@ type Post struct {
 }
 
 const createPost = `
-	INSERT INTO posts (message, username, forum, thread)
-	VALUES ($1, $2, $3, $4) RETURNING id, created, message, username, forum, thread`
+	INSERT INTO posts (created, message, username, forum, thread, parent)
+	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created, message, username, forum, thread, parent`
 
-func PostGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
+const selectMainPost = `
+	SELECT id, created, message, username, forum, thread, parent
+	FROM posts
+	WHERE thread = $1 AND forum = $2 AND parent = 0`
 
-func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
+const selectPosts = `
+	SELECT id, created, message, username, forum, thread, parent
+	FROM posts
+	WHERE thread = $1 AND forum = $2`
 
 func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	slug := params.ByName("slug_or_id")
+	slugId := params.ByName("slug_or_id")
 
 	posts := []*Post{}
 	if decode(r.Body, &posts) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	var thread, forum string
-	database.DB.QueryRow(selectThreadById, slug).Scan(&thread, &forum)
-	if isEmpty(forum) == nil {
-		database.DB.QueryRow(selectThreadBySlug, slug).Scan(&thread, &forum)
-	}
+	// var thread string
+	// var forum string
+	// database.DB.QueryRow(selectThreadById, slug).Scan(&thread, &forum)
+	// if isEmpty(forum) == nil {
+	// 	database.DB.QueryRow(selectThreadBySlug, slug).Scan(&thread, &forum)
+	// }
+	thread := getThreadBySlugId(slugId)
 
+	log.Println(thread.Id, thread.Forum)
+	createTime := time.Now()
 	for _, post := range posts {
-		err := database.DB.QueryRow(createPost, post.Message, post.Author, forum, thread).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread)
+		log.Println("parent -", post.Parent)
+		if post.Parent == 0 {
+			database.DB.QueryRow(selectMainPost, thread.Id, thread.Forum).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread)
+			log.Println(post.Thread, post.Id)
+			if post.Id != 0 {
+				jsonPost, _ := json.Marshal(post)
+				w.WriteHeader(http.StatusConflict)
+				w.Write(jsonPost)
+				return
+			}
+		}
+
+		err := database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, post.Parent)
 		if err, ok := err.(*pq.Error); ok {
+			log.Println(err.Code.Name())
 			if err.Code.Name() == "unique_violation" {
 				// if rows, err := database.DB.Query(selectUser, nickname, user.Email); err == nil {
 				// 	defer rows.Close()
@@ -76,4 +94,14 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	jsonPosts, _ := json.Marshal(posts)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonPosts)
+}
+
+func PostGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
 }

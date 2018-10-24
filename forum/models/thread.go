@@ -38,12 +38,12 @@ const selectThread = `
 	WHERE forum = $1`
 
 const selectThreadById = `
-	SELECT id, forum
+	SELECT id, slug, created, title, message, username, forum, votes
 	FROM threads
 	WHERE id = $1`
 
 const selectThreadBySlug = `
-	SELECT id, forum
+	SELECT id, slug, created, title, message, username, forum, votes
 	FROM threads
 	WHERE slug = $1`
 
@@ -56,6 +56,7 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
+	//проверка, что существует такой пользователь
 	var nickname, temp string
 	if database.DB.QueryRow(selectUserByNickname, thread.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
 		message := Error{"Can't find user by nickname:" + thread.Author}
@@ -65,7 +66,20 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		return
 	}
 
+	//проверка, что существует такой форум
+	var check string
+	database.DB.QueryRow(selectForum, forum).Scan(&check, &temp, &temp, &temp, &temp)
+	if isEmpty(check) == nil {
+		message := Error{"Can't find thread forum by slug:" + forum}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
+	}
+
+	log.Println(thread)
 	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, nickname, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	log.Println(err)
 	if err, ok := err.(*pq.Error); ok {
 		log.Println(err.Code.Name())
 		if err.Code.Name() == "unique_violation" {
@@ -84,21 +98,57 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	w.Write(jsonThread)
 }
 
-func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	forum := params.ByName("slug")
+	slugId := params.ByName("slug_or_id")
 
-	var count int
-	database.DB.QueryRow(countThread, forum).Scan(&count)
-	if count == 0 {
-		message := Error{"Can't find forum by slug:" + forum}
-		jsonMessage, _ := json.Marshal(message)
+	thread := getThreadBySlugId(slugId)
+	if isEmpty(thread.Forum) == nil {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
 		return
 	}
 
-	query := selectThread
+	jsonThread, _ := json.Marshal(thread)
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonThread)
+}
+
+func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	thread := getThreadBySlugId(params.ByName("slug_or_id"))
+
+	query := paramsGetPosts(selectPosts, r)
+
+	rows, err := database.DB.Query(query, thread.Id, thread.Forum)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	defer rows.Close()
+
+	posts := []*Post{}
+	for rows.Next() {
+		post := &Post{}
+		rows.Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
+		posts = append(posts, post)
+	}
+
+	jsonPosts, _ := json.Marshal(posts)
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonPosts)
+}
+
+func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+func paramsGetThreads(query string, r *http.Request) string {
 	since := r.URL.Query().Get("since")
 	order := r.URL.Query().Get("desc")
 	limit := r.URL.Query().Get("limit")
@@ -118,42 +168,17 @@ func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.P
 	if limit != "" {
 		query += "\nLIMIT " + limit
 	}
+	return query
+}
 
-	rows, err := database.DB.Query(query, forum)
-	if err != nil {
-		w.WriteHeader(http.StatusBadGateway)
-		return
+func paramsGetPosts(query string, r *http.Request) string {
+	since := r.URL.Query().Get("since")
+	limit := r.URL.Query().Get("limit")
+	if since != "" {
+		query += " AND id > '" + since + "'"
 	}
-
-	defer rows.Close()
-	threads := []*Thread{}
-	for rows.Next() {
-		thread := &Thread{}
-		rows.Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-		threads = append(threads, thread)
+	if limit != "" {
+		query += "\nLIMIT " + limit
 	}
-	jsonThreads, _ := json.Marshal(threads)
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonThreads)
-	return
-}
-
-func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
-
-func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
-
-func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
-
-func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	return query
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"tp_db/forum/database"
 )
 
 func decode(body io.ReadCloser, request interface{}) error {
@@ -22,4 +23,13 @@ func isEmpty(str string) interface{} {
 	} else {
 		return str
 	}
+}
+
+func getThreadBySlugId(slugId string) Thread {
+	thread := &Thread{}
+	database.DB.QueryRow(selectThreadById, slugId).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	if isEmpty(thread.Slug) == nil {
+		database.DB.QueryRow(selectThreadBySlug, slugId).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	}
+	return *thread
 }

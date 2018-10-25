@@ -26,6 +26,17 @@ const selectForum = `
 	FROM forums
 	WHERE slug = $1`
 
+const selectForumUsers = `
+	SELECT email, nickname, fullname, about
+	FROM forums JOIN threads ON (forum.slug = threads.forun) 
+		JOIN posts (forum.slug = posts.forun)
+	WHERE slug = $1`
+
+// Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
+
+// Пользователи выводятся отсортированные по nickname в порядке возрастания.
+// Порядок сотрировки должен соответсвовать побайтовому сравнение в нижнем регистре.
+
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := &Forum{}
@@ -78,26 +89,6 @@ func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	w.Write(jsonForum)
 }
 
-// func ForumDetails(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-// 	log.Println("was queried0")
-// 	rows, err := DB.Query("Select nickname, fullname, about, email From users")
-// 	log.Println("was queried1")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer rows.Close()
-// 	log.Println("was queried")
-
-// 	for rows.Next() {
-// 		user := &User{}
-// 		err = rows.Scan(&user.Nickname, &user.Fullname, &user.About, &user.Email)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		log.Println(user.Email)
-// 	}
-// }
-
 func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := params.ByName("slug")
@@ -135,5 +126,19 @@ func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	// .Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+
+	if rows, err := database.DB.Query(selectForumUsers, params.ByName("slug")); err == nil {
+		defer rows.Close()
+		users := []*User{}
+		for rows.Next() {
+			user := &User{}
+			rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+			users = append(users, user)
+		}
+
+		jsonUsers, _ := json.Marshal(users)
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonUsers)
+	}
 }

@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -77,17 +76,25 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		return
 	}
 
-	log.Println(thread)
+	//проверка, существует-ли уже данный thread
+	if isEmpty(thread.Slug) != nil {
+		database.DB.QueryRow(selectThreadBySlug, thread.Slug).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+		if thread.Id != 0 {
+			jsonThread, _ := json.Marshal(thread)
+			w.WriteHeader(http.StatusConflict)
+			w.Write(jsonThread)
+			return
+		}
+	}
+
 	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, nickname, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-	log.Println(err)
 	if err, ok := err.(*pq.Error); ok {
-		log.Println(err.Code.Name())
 		if err.Code.Name() == "unique_violation" {
 			// if database.DB.QueryRow(selectForum, forum.Slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) == nil {
 			// 	jsonForum, _ := json.Marshal(forum)
-			w.WriteHeader(http.StatusConflict)
+			// w.WriteHeader(http.StatusConflict)
 			// 	w.Write(jsonForum)
-			return
+			// return
 			// }
 		}
 		w.WriteHeader(http.StatusBadGateway)
@@ -139,11 +146,6 @@ func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 }
 
 func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
-}
-
-func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }

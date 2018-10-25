@@ -111,7 +111,10 @@ func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Para
 
 	thread := getThreadBySlugId(slugId)
 	if isEmpty(thread.Forum) == nil {
+		message := Error{"Can't find thread by slug:" + slugId}
+		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
 		return
 	}
 

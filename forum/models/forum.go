@@ -28,9 +28,11 @@ const selectForum = `
 
 const selectForumUsers = `
 	SELECT email, nickname, fullname, about
-	FROM forums JOIN threads ON (forum.slug = threads.forun) 
-		JOIN posts (forum.slug = posts.forun)
-	WHERE slug = $1`
+	FROM forums JOIN threads ON (forums.slug = threads.forum) 
+	JOIN posts ON (threads.id = posts.thread) JOIN users ON (users.nickname = threads.username OR users.nickname = posts.username)
+	WHERE forums.slug = $1
+	GROUP BY users.id
+	ORDER BY nickname ASC`
 
 // Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
@@ -126,9 +128,11 @@ func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.P
 
 func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	// .Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+	slug := params.ByName("slug")
 
-	if rows, err := database.DB.Query(selectForumUsers, params.ByName("slug")); err == nil {
+	// query := paramsGetUsers(selectForumUsers, r)
+
+	if rows, err := database.DB.Query(selectForumUsers, slug); err == nil {
 		defer rows.Close()
 		users := []*User{}
 		for rows.Next() {
@@ -141,4 +145,16 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		w.WriteHeader(http.StatusOK)
 		w.Write(jsonUsers)
 	}
+}
+
+func paramsGetUsers(query string, r *http.Request) string {
+	order := r.URL.Query().Get("desc")
+	limit := r.URL.Query().Get("limit")
+	if order == "true" {
+		query += " DESC"
+	}
+	if limit != "" {
+		query += "\nLIMIT " + limit
+	}
+	return query
 }

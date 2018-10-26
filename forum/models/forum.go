@@ -30,9 +30,7 @@ const selectForumUsers = `
 	SELECT email, nickname, fullname, about
 	FROM forums JOIN threads ON (forums.slug = threads.forum) 
 	JOIN posts ON (threads.id = posts.thread) JOIN users ON (users.nickname = threads.username OR users.nickname = posts.username)
-	WHERE forums.slug = $1
-	GROUP BY users.id
-	ORDER BY nickname ASC`
+	WHERE forums.slug = $1`
 
 // Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
@@ -130,28 +128,52 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slug := params.ByName("slug")
 
-	// query := paramsGetUsers(selectForumUsers, r)
-
-	if rows, err := database.DB.Query(selectForumUsers, slug); err == nil {
-		defer rows.Close()
-		users := []*User{}
-		for rows.Next() {
-			user := &User{}
-			rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-			users = append(users, user)
-		}
-
-		jsonUsers, _ := json.Marshal(users)
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonUsers)
+	forum := &Forum{}
+	database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+	//проверка,что форум существует
+	if isEmpty(forum.Title) == nil {
+		message := Error{"Can't find forum by slug:" + slug}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
 	}
+
+	query := paramsGetUsers(selectForumUsers, r)
+	rows, err := database.DB.Query(query, slug)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+	users := []*User{}
+	for rows.Next() {
+		user := &User{}
+		rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+		users = append(users, user)
+	}
+
+	jsonUsers, _ := json.Marshal(users)
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonUsers)
 }
 
 func paramsGetUsers(query string, r *http.Request) string {
+	since := r.URL.Query().Get("since")
 	order := r.URL.Query().Get("desc")
 	limit := r.URL.Query().Get("limit")
+
+	if since != "" {
+		query += " AND nickname > '" + since + "'"
+		// else {
+		// 	query += " AND created > '" + since + "'"
+		// }
+	}
+	query += "\nGROUP BY users.id"
 	if order == "true" {
-		query += " DESC"
+		query += "\nORDER BY nickname DESC"
+	} else {
+		query += "\nORDER BY nickname ASC"
 	}
 	if limit != "" {
 		query += "\nLIMIT " + limit

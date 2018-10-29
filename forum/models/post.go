@@ -22,6 +22,13 @@ type Post struct {
 	Created  time.Time `json:"created,omitempty"`
 }
 
+type Details struct {
+	Post   Post   `json:"post"`
+	User   User   `json:"user,omitempty"`
+	Forum  Forum  `json:"forum,omitempty"`
+	Thread Thread `json:"thread,omitempty"`
+}
+
 const createPost = `
 	INSERT INTO posts (created, message, username, forum, thread, parent)
 	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created, message, username, forum, thread, parent`
@@ -31,10 +38,21 @@ const selectMainPost = `
 	FROM posts
 	WHERE thread = $1 AND forum = $2 AND parent = 0`
 
+const selectPost = `
+	SELECT id, created, message, username, forum, thread, parent
+	FROM posts
+	WHERE id = $1`
+
 const selectPosts = `
 	SELECT id, created, message, username, forum, thread, parent
 	FROM posts
 	WHERE thread = $1 AND forum = $2`
+
+//ОПТИМИЗАЦИЯ: триггер
+const updatePostsCount = `
+	UPDATE forums
+	SET posts = posts + 1
+	WHERE slug = $1`
 
 func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -89,6 +107,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
+		database.DB.QueryRow(updatePostsCount, thread.Forum).Scan()
 	}
 
 	jsonPosts, _ := json.Marshal(posts)
@@ -98,10 +117,41 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 func PostGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	id := params.ByName("id")
+
+	postDetails := &Details{}
+
+	post := &Post{}
+	database.DB.QueryRow(selectPost, id).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, post.Parent)
+	if post.Author == "" {
+		message := Error{"Can't find post with id:" + id}
+		jsonMessage, _ := json.Marshal(message)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(jsonMessage)
+		return
+	}
+	postDetails.Post = *post
+	objects(r.URL.Query().Get("user"), postDetails)
+
+	jsonPost, _ := json.Marshal(postDetails)
 	w.WriteHeader(http.StatusOK)
+	w.Write(jsonPost)
 }
 
 func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+}
+
+func objects(param string, details *Details) {
+	// for _, param := range params {
+	switch param {
+	case "user":
+		user := &User{}
+		database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+		details.User = *user
+	case "forum":
+	case "thread":
+	}
+	// }
 }

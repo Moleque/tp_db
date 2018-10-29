@@ -164,10 +164,11 @@ func paramsGetUsers(query string, r *http.Request) string {
 	limit := r.URL.Query().Get("limit")
 
 	if since != "" {
-		query += " AND nickname > '" + since + "'"
-		// else {
-		// 	query += " AND created > '" + since + "'"
-		// }
+		if order == "true" {
+			query += " AND nickname < '" + since + "'"
+		} else {
+			query += " AND nickname > '" + since + "'"
+		}
 	}
 	query += "\nGROUP BY users.id"
 	if order == "true" {

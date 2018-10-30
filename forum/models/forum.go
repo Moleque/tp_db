@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"tp_db/forum/database"
 
@@ -27,14 +28,16 @@ const selectForum = `
 	WHERE slug = $1`
 
 const selectForumUsers = `
-	SELECT email, nickname, fullname, about
-	FROM forums JOIN threads ON (forums.slug = threads.forum) 
-	JOIN users ON (users.nickname = threads.username)
-	WHERE forums.slug = $1 UNION
-	SELECT email, nickname, fullname, about
-	FROM forums JOIN posts ON (forums.slug = posts.forum) 
-	JOIN users ON (users.nickname = posts.username)
-	WHERE forums.slug = $1`
+	SELECT DISTINCT *
+	FROM (SELECT email, nickname, fullname, about
+		FROM forums JOIN threads ON (forums.slug = threads.forum) 
+		JOIN users ON (users.nickname = threads.username)
+		WHERE forums.slug = $1 
+		UNION
+		SELECT email, nickname, fullname, about
+		FROM forums JOIN posts ON (forums.slug = posts.forum) 
+		JOIN users ON (users.nickname = posts.username)
+		WHERE forums.slug = $1) AS users`
 
 // Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
 
@@ -140,6 +143,7 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	query := paramsGetUsers(selectForumUsers, r)
 	rows, err := database.DB.Query(query, slug)
 	if err != nil {
+		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -163,16 +167,16 @@ func paramsGetUsers(query string, r *http.Request) string {
 
 	if since != "" {
 		if order == "true" {
-			query += " AND nickname < '" + since + "'"
+			query += "\nWHERE users.nickname < '" + since + "'"
 		} else {
-			query += " AND nickname > '" + since + "'"
+			query += "\nWHERE users.nickname > '" + since + "'"
 		}
 	}
-	query += "\nGROUP BY users.id"
+	// query += "\nGROUP BY users.nickname, users.email"
 	if order == "true" {
-		query += "\nORDER BY nickname DESC"
+		query += "\nORDER BY users.nickname DESC"
 	} else {
-		query += "\nORDER BY nickname ASC"
+		query += "\nORDER BY users.nickname ASC"
 	}
 	if limit != "" {
 		query += "\nLIMIT " + limit

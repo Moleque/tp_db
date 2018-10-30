@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"tp_db/forum/controllers"
-	"tp_db/forum/database"
+	"github.com/moleque/tp_db/forum/controllers"
+	"github.com/moleque/tp_db/forum/database"
 )
 
 const (

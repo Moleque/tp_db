@@ -3,7 +3,8 @@ package models
 import (
 	"encoding/json"
 	"net/http"
-	"tp_db/forum/database"
+
+	"github.com/moleque/tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 )

@@ -8,7 +8,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"tp_db/forum/database"
+	"github.com/moleque/tp_db/forum/database"
 )
 
 type Thread struct {

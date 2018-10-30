@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
-	"tp_db/forum/database"
+
+	"github.com/moleque/tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 )

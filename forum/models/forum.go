@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"tp_db/forum/database"
+
+	"github.com/moleque/tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/lib/pq"

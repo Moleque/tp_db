@@ -5,7 +5,8 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"tp_db/forum/database"
+
+	"github.com/moleque/tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/lib/pq"

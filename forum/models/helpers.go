@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"tp_db/forum/database"
+	"net/http"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/moleque/tp_db/forum/database"
 )
 
 func decode(body io.ReadCloser, request interface{}) error {
@@ -38,4 +41,14 @@ func conflict(textMessage string) []byte {
 	message := Error{textMessage}
 	jsonMessage, _ := json.Marshal(message)
 	return jsonMessage
+}
+
+func Creator(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	path1 := params.ByName("path1")
+	if path1 == "create" {
+		ForumCreate(w, r, params)
+	} else {
+		ThreadCreate(w, r, params)
+	}
 }

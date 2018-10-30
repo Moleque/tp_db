@@ -2,13 +2,11 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 	"tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/lib/pq"
 )
 
 type Post struct {
@@ -98,28 +96,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 			return
 		}
 
-		err := database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
-		log.Println(err)
-		if err, ok := err.(*pq.Error); ok {
-			log.Println(err.Code.Name())
-			if err.Code.Name() == "unique_violation" {
-				// if rows, err := database.DB.Query(selectUser, nickname, user.Email); err == nil {
-				// 	defer rows.Close()
-				// 	users := []*User{}
-				// 	for rows.Next() {
-				// 		user := &User{}
-				// 		rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-				// 		users = append(users, user)
-				// 	}
-				// jsonUsers, _ := json.Marshal(users)
-				w.WriteHeader(http.StatusConflict)
-				// w.Write(jsonUsers)
-				return
-				// }
-			}
-			w.WriteHeader(http.StatusBadGateway)
-			return
-		}
+		database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
 		database.DB.QueryRow(updatePostsCount, thread.Forum).Scan()
 	}
 

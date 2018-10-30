@@ -29,7 +29,11 @@ const selectForum = `
 const selectForumUsers = `
 	SELECT email, nickname, fullname, about
 	FROM forums JOIN threads ON (forums.slug = threads.forum) 
-	JOIN posts ON (threads.id = posts.thread) JOIN users ON (users.nickname = threads.username OR users.nickname = posts.username)
+	JOIN users ON (users.nickname = threads.username)
+	WHERE forums.slug = $1 UNION
+	SELECT email, nickname, fullname, about
+	FROM forums JOIN posts ON (forums.slug = posts.forum) 
+	JOIN users ON (users.nickname = posts.username)
 	WHERE forums.slug = $1`
 
 // Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
@@ -77,10 +81,8 @@ func ForumGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	forum := &Forum{}
 	if database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) != nil {
-		message := Error{"Can't find user by nickname:" + slug}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find user by nickname:" + slug))
 		return
 	}
 
@@ -96,10 +98,8 @@ func ForumGetThreads(w http.ResponseWriter, r *http.Request, params httprouter.P
 	var count int
 	database.DB.QueryRow(countThread, forum).Scan(&count)
 	if count == 0 {
-		message := Error{"Can't find forum by slug:" + forum}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find forum by slug:" + forum))
 		return
 	}
 
@@ -132,10 +132,8 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
 	//проверка,что форум существует
 	if isEmpty(forum.Title) == nil {
-		message := Error{"Can't find forum by slug:" + slug}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find forum by slug:" + slug))
 		return
 	}
 

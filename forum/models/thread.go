@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/lib/pq"
 
 	"tp_db/forum/database"
 )
@@ -97,19 +96,7 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		}
 	}
 
-	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, nickname, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-	if err, ok := err.(*pq.Error); ok {
-		if err.Code.Name() == "unique_violation" {
-			// if database.DB.QueryRow(selectForum, forum.Slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) == nil {
-			// 	jsonForum, _ := json.Marshal(forum)
-			// w.WriteHeader(http.StatusConflict)
-			// 	w.Write(jsonForum)
-			// return
-			// }
-		}
-		w.WriteHeader(http.StatusBadGateway)
-		return
-	}
+	database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, nickname, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	database.DB.QueryRow(updateThreadsCount, forum).Scan()
 
 	jsonThread, _ := json.Marshal(thread)

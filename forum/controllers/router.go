@@ -36,11 +36,20 @@ var routes = Routes{
 		Index,
 	},
 
+	// ===============
+	// === Service ===
+	Route{
+		"Status",
+		strings.ToUpper("Get"),
+		"/api/service/status",
+		models.Status,
+	},
+
 	Route{
 		"Clear",
 		strings.ToUpper("Post"),
 		"/api/service/clear",
-		Clear,
+		models.Clear,
 	},
 
 	// =============
@@ -94,13 +103,6 @@ var routes = Routes{
 		strings.ToUpper("Post"),
 		"/api/thread/:slug_or_id/create",
 		models.PostsCreate,
-	},
-
-	Route{
-		"Status",
-		strings.ToUpper("Get"),
-		"/api/service/status",
-		models.Status,
 	},
 
 	// ==============

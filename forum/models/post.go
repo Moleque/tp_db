@@ -64,12 +64,6 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slugId := params.ByName("slug_or_id")
 
-	posts := []*Post{}
-	if decode(r.Body, &posts) != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	thread := getThreadBySlugId(slugId)
 	//проверка, что существует такая ветка
 	if thread.Slug == "" {
@@ -78,41 +72,34 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
-	log.Println(thread.Id, thread.Forum)
-	createTime := time.Now()
+	posts := []*Post{}
+	if decode(r.Body, &posts) != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	createTime := time.Now() //время для всех постов
 	for _, post := range posts {
-		log.Println("parent -", post.Parent)
-		if post.Parent == 0 {
-			database.DB.QueryRow(selectMainPost, thread.Id, thread.Forum).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread)
-			log.Println(post.Thread, post.Id)
-			if post.Id != 0 {
-				jsonPost, _ := json.Marshal(post)
+		if post.Parent != 0 { //если родитель есть
+			parent := &Post{} //получаем родительский пост
+			database.DB.QueryRow(selectPost, post.Parent).Scan(&parent.Id, &parent.Created, &parent.Message, &parent.Author, &parent.Forum, &parent.Thread, &parent.Parent, &parent.IsEdited)
+			if thread.Id != parent.Thread || isEmpty(parent.Author) == nil {
 				w.WriteHeader(http.StatusConflict)
-				w.Write(jsonPost)
+				w.Write(conflict("Parent post was created in another thread"))
 				return
 			}
 		}
 
-		// //проверка, что родитель из той же ветки
-		// parent := &Post{}
-		// database.DB.QueryRow(selectPost, post.Parent).Scan(&parent.Id, &parent.Created, &parent.Message, &parent.Author, &parent.Forum, &parent.Thread, &parent.Parent, &parent.IsEdited)
-		// if post.Thread != parent.Thread {
-		// 	w.WriteHeader(http.StatusNotFound)
-		// 	w.Write(conflict("Parent post was created in another thread"))
-		// 	return
-		// }
-
 		//проверка, что существует такой пользователь
 		var nickname, temp string
 		if database.DB.QueryRow(selectUserByNickname, post.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
-			message := Error{"Can't find post author by nickname:" + nickname}
-			jsonMessage, _ := json.Marshal(message)
 			w.WriteHeader(http.StatusNotFound)
-			w.Write(jsonMessage)
+			w.Write(conflict("Can't find post author by nickname:" + nickname))
 			return
 		}
 
-		err := database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, post.Parent)
+		err := database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
+		log.Println(err)
 		if err, ok := err.(*pq.Error); ok {
 			log.Println(err.Code.Name())
 			if err.Code.Name() == "unique_violation" {

@@ -49,7 +49,7 @@ const selectThreadBySlug = `
 
 const updateThread = `
 	UPDATE threads
-	SET title = $2, message = $3
+	SET title = COALESCE($2, title), message = COALESCE($3, message)
 	WHERE id = $1
 	RETURNING id, slug, created, title, message, username, forum, votes`
 
@@ -71,10 +71,8 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	//проверка, что существует такой пользователь
 	var nickname, temp string
 	if database.DB.QueryRow(selectUserByNickname, thread.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
-		message := Error{"Can't find user by nickname:" + thread.Author}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find user by nickname:" + thread.Author))
 		return
 	}
 
@@ -82,10 +80,8 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	var check string
 	database.DB.QueryRow(selectForum, forum).Scan(&check, &temp, &temp, &temp, &temp)
 	if isEmpty(check) == nil {
-		message := Error{"Can't find thread forum by slug:" + forum}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find thread forum by slug:" + forum))
 		return
 	}
 	forum = check
@@ -127,10 +123,8 @@ func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Para
 
 	thread := getThreadBySlugId(slugId)
 	if isEmpty(thread.Forum) == nil {
-		message := Error{"Can't find thread by slug:" + slugId}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find thread by slug:" + slugId))
 		return
 	}
 
@@ -170,10 +164,8 @@ func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 
 	thread := getThreadBySlugId(slugId)
 	if isEmpty(thread.Forum) == nil {
-		message := Error{"Can't find thread by slug:" + slugId}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find thread by slug:" + slugId))
 		return
 	}
 
@@ -182,7 +174,7 @@ func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	log.Println("test", database.DB.QueryRow(updateThread, thread.Id, updatedThread.Title, updatedThread.Message).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes))
+	log.Println("test", database.DB.QueryRow(updateThread, thread.Id, isEmpty(updatedThread.Title), isEmpty(updatedThread.Message)).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes))
 
 	jsonThread, _ := json.Marshal(thread)
 	w.WriteHeader(http.StatusOK)

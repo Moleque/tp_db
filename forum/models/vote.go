@@ -42,11 +42,27 @@ const addVoteToThread = `
 
 func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	thread := getThreadBySlugId(params.ByName("slug_or_id"))
+	slugId := params.ByName("slug_or_id")
+
+	thread := getThreadBySlugId(slugId)
+	if isEmpty(thread.Author) == nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(conflict("Can't find thread by slug:" + slugId))
+		return
+	}
 
 	vote := &Vote{}
 	if decode(r.Body, vote) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	//проверка наличия данного пользователя
+	user := &User{}
+	database.DB.QueryRow(selectUserByNickname, vote.Nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+	if isEmpty(user.Nickname) == nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(conflict("Can't find user by nickname:" + slugId))
+		return
 	}
 
 	//проверка наличия голоса на данный момент

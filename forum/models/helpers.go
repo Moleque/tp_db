@@ -33,3 +33,9 @@ func getThreadBySlugId(slugId string) Thread {
 	}
 	return *thread
 }
+
+func conflict(textMessage string) []byte {
+	message := Error{textMessage}
+	jsonMessage, _ := json.Marshal(message)
+	return jsonMessage
+}

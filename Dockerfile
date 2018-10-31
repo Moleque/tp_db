@@ -22,7 +22,7 @@ COPY database/create.sql database/create.sql
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER docker WITH SUPERUSER PASSWORD 'docker';" &&\
     createdb -O docker docker &&\
-    # psql --command "CREATE DATABASE docker;" &&\
+    psql --command "CREATE DATABASE docker" &&\
     psql -a -f database/create.sql &&\
     /etc/init.d/postgresql stop
 

@@ -23,7 +23,7 @@ type Post struct {
 
 type Details struct {
 	Post Post `json:"post"`
-	// User   User   `json:"user,omitempty"`
+	// User   User   `json:"author,omitempty"`
 	// Forum  Forum  `json:"forum,omitempty"`
 	// Thread Thread `json:"thread,omitempty"`
 }
@@ -159,19 +159,19 @@ func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 func objects(params []string, details *Details) {
 	// for _, param := range params {
-	// 	// switch param {
-	// 	// case "user":
-	// 	// 	user := &User{}
-	// 	// 	database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 	// 	details.User = *user
-	// 	// case "forum":
-	// 	// 	forum := &Forum{}
-	// 	// 	// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 	// 	details.Forum = *forum
-	// 	// case "thread":
-	// 	// 	thread := &Thread{}
-	// 	// 	// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 	// 	details.Thread = *thread
-	// 	// }
+	// 	switch param {
+	// 	case "user":
+	// 		user := &User{}
+	// 		database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+	// 		details.User = *user
+	// 	case "forum":
+	// 		forum := &Forum{}
+	// 		// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+	// 		details.Forum = *forum
+	// 	case "thread":
+	// 		thread := &Thread{}
+	// 		// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+	// 		details.Thread = *thread
+	// 	}
 	// }
 }

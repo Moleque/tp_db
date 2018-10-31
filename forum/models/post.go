@@ -2,7 +2,9 @@ package models
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/moleque/tp_db/forum/database"
@@ -22,10 +24,10 @@ type Post struct {
 }
 
 type Details struct {
-	Post Post `json:"post"`
-	// User   User   `json:"author,omitempty"`
-	// Forum  Forum  `json:"forum,omitempty"`
-	// Thread Thread `json:"thread,omitempty"`
+	Post   Post        `json:"post"`
+	User   interface{} `json:"author,omitempty"`
+	Forum  interface{} `json:"forum,omitempty"`
+	Thread interface{} `json:"thread,omitempty"`
 }
 
 const createPost = `
@@ -121,11 +123,8 @@ func PostGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	}
 	postDetails.Post = *post
 
-	var queryParams []string
-	queryParams = append(queryParams, r.URL.Query().Get("user"))
-	// queryParams = append(queryParams, r.URL.Query().Get("forum"))
-	// queryParams = append(queryParams, r.URL.Query().Get("thread"))
-	objects(queryParams, postDetails)
+	queryParams := strings.Split(r.URL.Query().Get("related"), ",")
+	objects(postDetails, queryParams)
 
 	jsonPost, _ := json.Marshal(postDetails)
 	w.WriteHeader(http.StatusOK)
@@ -157,21 +156,22 @@ func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	w.Write(jsonPost)
 }
 
-func objects(params []string, details *Details) {
-	// for _, param := range params {
-	// 	switch param {
-	// 	case "user":
-	// 		user := &User{}
-	// 		database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 		details.User = *user
-	// 	case "forum":
-	// 		forum := &Forum{}
-	// 		// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 		details.Forum = *forum
-	// 	case "thread":
-	// 		thread := &Thread{}
-	// 		// database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	// 		details.Thread = *thread
-	// 	}
-	// }
+func objects(details *Details, params []string) {
+	for _, param := range params {
+		log.Println(param)
+		switch param {
+		case "user":
+			user := &User{}
+			database.DB.QueryRow(selectUserByNickname, details.Post.Author).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
+			details.User = *user
+		case "forum":
+			forum := &Forum{}
+			database.DB.QueryRow(selectForum, details.Post.Forum).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+			details.Forum = *forum
+		case "thread":
+			thread := &Thread{}
+			database.DB.QueryRow(selectThreadById, details.Post.Thread).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+			details.Thread = *thread
+		}
+	}
 }

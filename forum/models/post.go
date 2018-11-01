@@ -45,8 +45,7 @@ const selectPost = `
 
 const selectPosts = `
 	SELECT id, created, message, username, forum, thread, parent
-	FROM posts
-	WHERE thread = $1 AND forum = $2`
+	FROM posts`
 
 const updatePost = `
 	UPDATE posts

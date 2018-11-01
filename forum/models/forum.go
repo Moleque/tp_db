@@ -39,11 +39,6 @@ const selectForumUsers = `
 		JOIN users ON (users.nickname = posts.username)
 		WHERE forums.slug = $1) AS users`
 
-// Получение списка пользователей, у которых есть пост или ветка обсуждения в данном форуме.
-
-// Пользователи выводятся отсортированные по nickname в порядке возрастания.
-// Порядок сотрировки должен соответсвовать побайтовому сравнение в нижнем регистре.
-
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := &Forum{}

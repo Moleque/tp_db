@@ -56,8 +56,8 @@ CREATE TABLE votes (
 );
 
 
-CREATE OR REPLACE FUNCTION create_path() RETURNS TRIGGER AS
-$path_trigger$
+CREATE OR REPLACE FUNCTION create_post() RETURNS TRIGGER AS
+$post_trigger$
 	BEGIN
 		IF (NEW.parent = 0)
 			THEN 
@@ -70,8 +70,8 @@ $path_trigger$
 		UPDATE forums SET posts = posts + 1 WHERE slug = NEW.forum;
 		RETURN NEW;
 	END;
-$path_trigger$
+$post_trigger$
 LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS path_trigger ON posts;
-CREATE TRIGGER path_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_path();
+DROP TRIGGER IF EXISTS post_trigger ON posts;
+CREATE TRIGGER post_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_post();

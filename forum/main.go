@@ -13,7 +13,7 @@ import (
 const (
 	DB_USER     = "docker"
 	DB_PASSWORD = "docker"
-	DB_NAME     = "forum"
+	DB_NAME     = "docker"
 )
 
 func main() {

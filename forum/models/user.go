@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/moleque/tp_db/forum/database"
+	"tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/lib/pq"

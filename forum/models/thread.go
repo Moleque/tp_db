@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/moleque/tp_db/forum/database"
+	"tp_db/forum/database"
 )
 
 type Thread struct {
@@ -219,22 +218,22 @@ func paramsGetPosts(query string, r *http.Request) string {
 			query += "\nLIMIT " + limit
 		}
 	case "parent_tree":
-		query += " root IN (SELECT id FROM posts WHERE thread = " + strconv.Itoa(threadId) + " AND parent=0"
-		if since != "" {
-			if order == "true" {
-				query += " AND id < (SELECT root FROM posts WHERE id = " + since + ")"
-			} else {
-				query += " AND id > (SELECT root FROM posts WHERE id = " + since + ")"
-			}
-		}
-		if order == "true" {
-			query += "\nORDER BY id DESC" + limit + ") ORDER BY root DESC, path"
-		} else {
-			query += "\nORDER BY id ASC" + limit + ") ORDER BY path"
-		}
-		if limit != "" {
-			query += "\nLIMIT " + limit
-		}
+		// query += " root IN (SELECT id FROM posts WHERE thread = " + strconv.Itoa(threadId) + " AND parent=0"
+		// if since != "" {
+		// 	if order == "true" {
+		// 		query += " AND id < (SELECT root FROM posts WHERE id = " + since + ")"
+		// 	} else {
+		// 		query += " AND id > (SELECT root FROM posts WHERE id = " + since + ")"
+		// 	}
+		// }
+		// if order == "true" {
+		// 	query += "\nORDER BY id DESC" + limit + ") ORDER BY root DESC, path"
+		// } else {
+		// 	query += "\nORDER BY id ASC" + limit + ") ORDER BY path"
+		// }
+		// if limit != "" {
+		// 	query += "\nLIMIT " + limit
+		// }
 	default:
 		log.Println("sort2")
 		if since != "" {

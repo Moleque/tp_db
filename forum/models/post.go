@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/moleque/tp_db/forum/database"
+	"tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
 )

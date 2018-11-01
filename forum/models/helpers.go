@@ -6,8 +6,9 @@ import (
 	"io"
 	"net/http"
 
+	"tp_db/forum/database"
+
 	"github.com/julienschmidt/httprouter"
-	"github.com/moleque/tp_db/forum/database"
 )
 
 func decode(body io.ReadCloser, request interface{}) error {

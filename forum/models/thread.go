@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -166,8 +165,7 @@ func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	log.Println("test", database.DB.QueryRow(updateThread, thread.Id, isEmpty(updatedThread.Title), isEmpty(updatedThread.Message)).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes))
-
+	database.DB.QueryRow(updateThread, thread.Id, isEmpty(updatedThread.Title), isEmpty(updatedThread.Message)).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	jsonThread, _ := json.Marshal(thread)
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonThread)

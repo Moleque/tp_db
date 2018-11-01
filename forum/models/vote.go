@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"tp_db/forum/database"
@@ -68,40 +67,29 @@ func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	//проверка наличия голоса на данный момент
 	var value int32
-	// if err :=
 	database.DB.QueryRow(selectVoice, thread.Id, vote.Nickname).Scan(&value)
-	log.Println("vvv", value, vote.Voice)
-	// err != nil {
-	// 	log.Println("ddd1", err)
-	// 	w.WriteHeader(http.StatusBadGateway)
-	// 	return
-	// }
 
 	//ОПТИМИЗАЦИЯ: создание триггера
 	switch value {
 	case 0:
 		//создание голоса пользователя
 		if err := database.DB.QueryRow(createVote, thread.Id, vote.Nickname, vote.Voice).Scan(&vote.Nickname, &vote.Voice); err != nil {
-			log.Println("ddd2", err)
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
 		//добавление голоса к ветке
 		if err := database.DB.QueryRow(addVoteToThread, thread.Id, vote.Voice).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes); err != nil {
-			log.Println("ddd3", err)
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
 	case 1:
 		if vote.Voice < 0 {
-			log.Println("+", value, vote.Voice)
 			database.DB.QueryRow(updateVoice, thread.Id, vote.Nickname, -2).Scan(&vote.Voice)
 			database.DB.QueryRow(updateVotes, thread.Id, -2).Scan(&vote.Nickname, &vote.Voice)
 			database.DB.QueryRow(selectThreadById, thread.Id).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 		}
 	case -1:
 		if vote.Voice > 0 {
-			log.Println("-", value, vote.Voice)
 			database.DB.QueryRow(updateVoice, thread.Id, vote.Nickname, 2).Scan(&vote.Nickname, &vote.Voice)
 			database.DB.QueryRow(updateVotes, thread.Id, 2).Scan(&vote.Nickname, &vote.Voice)
 			database.DB.QueryRow(selectThreadById, thread.Id).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)

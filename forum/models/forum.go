@@ -48,10 +48,8 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	var nickname, temp string
 	if database.DB.QueryRow(selectUserByNickname, forum.User).Scan(&temp, &nickname, &temp, &temp) != nil {
-		message := Error{"Can't find user by nickname:" + forum.User}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find user by nickname:" + forum.User))
 		return
 	}
 
@@ -166,7 +164,6 @@ func paramsGetUsers(query string, r *http.Request) string {
 			query += "\nWHERE users.nickname > '" + since + "'"
 		}
 	}
-	// query += "\nGROUP BY users.nickname, users.email"
 	if order == "true" {
 		query += "\nORDER BY users.nickname DESC"
 	} else {

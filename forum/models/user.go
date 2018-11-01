@@ -91,10 +91,8 @@ func UserGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	user := &User{}
 	if database.DB.QueryRow(selectUserByNickname, nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About) != nil {
-		message := Error{"Can't find user by nickname:" + nickname}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find user by nickname:" + nickname))
 		return
 	}
 
@@ -118,10 +116,8 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		if err.Code.Name() == "unique_violation" {
 			var emailOwner string
 			if database.DB.QueryRow(selectNicknameByEmail, user.Email).Scan(&emailOwner) == nil {
-				message := Error{"Can't find user by nickname:" + emailOwner}
-				jsonMessage, _ := json.Marshal(message)
 				w.WriteHeader(http.StatusConflict)
-				w.Write(jsonMessage)
+				w.Write(conflict("Can't find user by nickname:" + emailOwner))
 				return
 			}
 		}
@@ -129,10 +125,8 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		return
 	}
 	if user.Nickname != nickname {
-		message := Error{"Can't find user by nickname:" + nickname}
-		jsonMessage, _ := json.Marshal(message)
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(jsonMessage)
+		w.Write(conflict("Can't find user by nickname:" + nickname))
 		return
 	}
 	jsonUser, _ := json.Marshal(user)

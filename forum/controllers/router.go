@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"net/http"
 	"strings"
 
 	"tp_db/forum/models"
@@ -27,6 +29,20 @@ func NewRouter() *httprouter.Router {
 		router.Handle(route.Method, route.Pattern, handler)
 	}
 	return router
+}
+
+func Index(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	fmt.Fprintf(w, "Welcome to the forum!")
+}
+
+func RouterOfCreating(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	path1 := params.ByName("path1")
+	if path1 == "create" {
+		models.ForumCreate(w, r, params)
+	} else {
+		models.ThreadCreate(w, r, params)
+	}
 }
 
 var routes = Routes{
@@ -59,7 +75,7 @@ var routes = Routes{
 		"ForumCreate",
 		strings.ToUpper("Post"),
 		"/api/forum/:path1",
-		models.Creator,
+		RouterOfCreating,
 	},
 
 	Route{
@@ -112,7 +128,7 @@ var routes = Routes{
 		"ThreadCreate",
 		strings.ToUpper("Post"),
 		"/api/forum/:path1/:path2",
-		models.Creator,
+		RouterOfCreating,
 	},
 
 	Route{

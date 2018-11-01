@@ -90,7 +90,6 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 			w.Write(conflict("Can't find post author by nickname:" + nickname))
 			return
 		}
-
 		database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
 	}
 

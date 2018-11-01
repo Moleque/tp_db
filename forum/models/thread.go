@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -124,6 +125,7 @@ func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	thread := getThreadBySlugId(params.ByName("slug_or_id"))
 
+	log.Println("test")
 	query := paramsGetPosts(selectPosts, r)
 
 	rows, err := database.DB.Query(query, thread.Id, thread.Forum)
@@ -193,12 +195,64 @@ func paramsGetThreads(query string, r *http.Request) string {
 
 func paramsGetPosts(query string, r *http.Request) string {
 	since := r.URL.Query().Get("since")
+	order := r.URL.Query().Get("desc")
 	limit := r.URL.Query().Get("limit")
-	if since != "" {
-		query += " AND id > '" + since + "'"
+	sort := r.URL.Query().Get("sort")
+
+	log.Println("sort", sort)
+
+	switch sort {
+	case "tree":
+		if since != "" {
+			if order == "true" {
+				query += " AND path < (SELECT path FROM posts WHERE id = " + since + ")"
+			} else {
+				query += " AND path > (SELECT path FROM posts WHERE id = " + since + ")"
+			}
+		}
+		if order == "true" {
+			query += "\nORDER BY path DESC"
+		} else {
+			query += "\nORDER BY path ASC"
+		}
+		if limit != "" {
+			query += "\nLIMIT " + limit
+		}
+	case "parent_tree":
+		query += " root IN (SELECT id FROM posts WHERE thread = " + strconv.Itoa(threadId) + " AND parent=0"
+		if since != "" {
+			if order == "true" {
+				query += " AND id < (SELECT root FROM posts WHERE id = " + since + ")"
+			} else {
+				query += " AND id > (SELECT root FROM posts WHERE id = " + since + ")"
+			}
+		}
+		if order == "true" {
+			query += "\nORDER BY id DESC" + limit + ") ORDER BY root DESC, path"
+		} else {
+			query += "\nORDER BY id ASC" + limit + ") ORDER BY path"
+		}
+		if limit != "" {
+			query += "\nLIMIT " + limit
+		}
+	default:
+		log.Println("sort2")
+		if since != "" {
+			if order == "true" {
+				query += " AND id < '" + since + "'"
+			} else {
+				query += " AND id > '" + since + "'"
+			}
+		}
+		if order == "true" {
+			query += "\nORDER BY id DESC"
+		} else {
+			query += "\nORDER BY id ASC"
+		}
+		if limit != "" {
+			query += "\nLIMIT " + limit
+		}
 	}
-	if limit != "" {
-		query += "\nLIMIT " + limit
-	}
+	log.Println("query", query)
 	return query
 }

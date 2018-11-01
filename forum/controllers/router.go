@@ -3,7 +3,7 @@ package controllers
 import (
 	"strings"
 
-	"github.com/moleque/tp_db/forum/models"
+	"tp_db/forum/models"
 
 	"github.com/julienschmidt/httprouter"
 )

@@ -54,10 +54,14 @@ ENV GOPATH /opt/go
 ENV PATH $GOROOT/bin:$GOPATH/bin:/usr/local/go/bin:$PATH
 
 # Копируем исходный код в Docker-контейнер
-WORKDIR $GOPATH/src/github.com/moleque/tp_db
-ADD . $GOPATH/src/github.com/moleque/tp_db
-RUN go get github.com/Moleque/tp_db/forum/controllers
-RUN go build ./forum/main.go
+WORKDIR $GOPATH/src
+
+WORKDIR $GOPATH/src/tp_db/
+ADD . $GOPATH/src/tp_db/
+RUN go get github.com/julienschmidt/httprouter
+RUN go get github.com/lib/pq
+RUN go install ./forum
+
 
 # Собираем генераторы
 # RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
@@ -74,4 +78,4 @@ EXPOSE 5000
 # ===============================
 # Запускаем PostgreSQL и сервер
 
-CMD service postgresql start && ./main --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && forum

@@ -44,7 +44,8 @@ CREATE TABLE posts (
     forum citext NOT NULL,
     thread integer NOT NULL,
     parent integer DEFAULT NULL,
-    path integer []
+    path integer[],
+    root integer 
 );
 
 CREATE TABLE votes (
@@ -53,3 +54,24 @@ CREATE TABLE votes (
     username citext NOT NULL,
     value integer NOT NULL
 );
+
+
+CREATE OR REPLACE FUNCTION create_path() RETURNS TRIGGER AS
+$path_trigger$
+	BEGIN
+		IF (NEW.parent = 0)
+			THEN 
+				NEW.path = ARRAY[NEW.id];
+				NEW.root = NEW.id;
+			ELSE 
+				NEW.path = (SELECT posts.path || NEW.id FROM posts WHERE id = NEW.parent);
+				NEW.root = NEW.path[1];
+		END IF;
+		UPDATE forums SET posts = posts + 1 WHERE slug = NEW.forum;
+		RETURN NEW;
+	END;
+$path_trigger$
+LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS path_trigger ON posts;
+CREATE TRIGGER path_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_path();

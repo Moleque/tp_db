@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -158,7 +157,6 @@ func PostUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 func objects(details *Details, params []string) {
 	for _, param := range params {
-		log.Println(param)
 		switch param {
 		case "user":
 			user := &User{}

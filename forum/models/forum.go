@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/moleque/tp_db/forum/database"
@@ -144,7 +143,6 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	query := paramsGetUsers(selectForumUsers, r)
 	rows, err := database.DB.Query(query, slug)
 	if err != nil {
-		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

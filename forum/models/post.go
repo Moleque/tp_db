@@ -54,12 +54,6 @@ const updatePost = `
 	WHERE id = $1
 	RETURNING id, created, message, username, forum, thread, parent, isedited`
 
-//ОПТИМИЗАЦИЯ: триггер
-const updatePostsCount = `
-	UPDATE forums
-	SET posts = posts + 1
-	WHERE slug = $1`
-
 func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slugId := params.ByName("slug_or_id")
@@ -99,7 +93,6 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		}
 
 		database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
-		database.DB.QueryRow(updatePostsCount, thread.Forum).Scan()
 	}
 
 	jsonPosts, _ := json.Marshal(posts)

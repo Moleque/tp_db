@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -30,8 +31,8 @@ type Details struct {
 }
 
 const createPost = `
-	INSERT INTO posts (created, message, username, forum, thread, parent)
-	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created, message, username, forum, thread, parent`
+	INSERT INTO posts (created, message, username, forum, thread, parent) 
+	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created, message, username, forum, thread, parent;`
 
 const selectMainPost = `
 	SELECT id, created, message, username, forum, thread, parent
@@ -71,8 +72,12 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
+	template, _ := database.DB.Prepare(createPost)
+	defer template.Close()
+
 	createTime := time.Now() //время для всех постов
 	for _, post := range posts {
+
 		if post.Parent != 0 { //если родитель есть
 			parent := &Post{} //получаем родительский пост
 			database.DB.QueryRow(selectPost, post.Parent).Scan(&parent.Id, &parent.Created, &parent.Message, &parent.Author, &parent.Forum, &parent.Thread, &parent.Parent, &parent.IsEdited)
@@ -84,13 +89,22 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		}
 
 		//проверка, что существует такой пользователь
-		var nickname, temp string
-		if database.DB.QueryRow(selectUserByNickname, post.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write(conflict("Can't find post author by nickname:" + nickname))
-			return
+		// var nickname, temp string
+		// if database.DB.QueryRow(selectUserByNickname, post.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
+		// 	w.WriteHeader(http.StatusNotFound)
+		// 	w.Write(conflict("Can't find post author by nickname:" + nickname))
+		// 	return
+		// }
+
+		err := template.QueryRow(createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
+		if err != nil {
+			fmt.Println("!!!!!!!!!!!!!!!!!!!", err.Error())
+			if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
+				w.WriteHeader(http.StatusNotFound)
+				w.Write(conflict("Can't find post author by nickname:" + post.Author))
+				return
+			}
 		}
-		database.DB.QueryRow(createPost, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
 	}
 
 	jsonPosts, _ := json.Marshal(posts)

@@ -50,6 +50,13 @@ func (db *DataBase) QueryRow(query string, args ...interface{}) *sql.Row {
 	return db.instance.QueryRow(query, args...)
 }
 
+func (db *DataBase) Prepare(query string) (*sql.Stmt, error) {
+	if !db.connection {
+		return nil, nil
+	}
+	return db.instance.Prepare(query)
+}
+
 func (db *DataBase) Exec(query string, args ...interface{}) (sql.Result, error) {
 	if !db.connection {
 		return nil, fmt.Errorf("database query")

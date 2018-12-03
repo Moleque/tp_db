@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +33,7 @@ type Details struct {
 
 const createPost = `
 	INSERT INTO posts (created, message, username, forum, thread, parent) 
-	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, created, message, username, forum, thread, parent;`
+	VALUES `
 
 const selectMainPost = `
 	SELECT id, created, message, username, forum, thread, parent
@@ -71,41 +72,67 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	if len(posts) == 0 {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte("[]"))
+		return
+	}
 
-	template, _ := database.DB.Prepare(createPost)
-	defer template.Close()
+	query := createPost
+	vals := []interface{}{}
 
 	createTime := time.Now() //время для всех постов
+	iterator := 0
 	for _, post := range posts {
-
-		if post.Parent != 0 { //если родитель есть
-			parent := &Post{} //получаем родительский пост
-			database.DB.QueryRow(selectPost, post.Parent).Scan(&parent.Id, &parent.Created, &parent.Message, &parent.Author, &parent.Forum, &parent.Thread, &parent.Parent, &parent.IsEdited)
-			if thread.Id != parent.Thread || isEmpty(parent.Author) == nil {
-				w.WriteHeader(http.StatusConflict)
-				w.Write(conflict("Parent post was created in another thread"))
-				return
-			}
+		shift := iterator * 6
+		parentVal := fmt.Sprintf("$%d", shift+6)
+		if post.Parent != 0 {
+			parentVal = "(SELECT id FROM posts WHERE id = " + parentVal + " and thread = $" + strconv.Itoa(shift+5) + ")"
 		}
-
-		//проверка, что существует такой пользователь
-		// var nickname, temp string
-		// if database.DB.QueryRow(selectUserByNickname, post.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
-		// 	w.WriteHeader(http.StatusNotFound)
-		// 	w.Write(conflict("Can't find post author by nickname:" + nickname))
-		// 	return
-		// }
-
-		err := template.QueryRow(createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent).Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
-		if err != nil {
-			fmt.Println("!!!!!!!!!!!!!!!!!!!", err.Error())
-			if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
-				w.WriteHeader(http.StatusNotFound)
-				w.Write(conflict("Can't find post author by nickname:" + post.Author))
-				return
-			}
-		}
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, %s),", shift+1, shift+2, shift+3, shift+4, shift+5, parentVal)
+		vals = append(vals, createTime, post.Message, post.Author, thread.Forum, thread.Id, post.Parent)
+		iterator++
 	}
+	query = query[0:len(query)-1] + " RETURNING id, created, message, username, forum, thread, parent;"
+	template, _ := database.DB.Prepare(query)
+
+	rows, err := template.Query(vals...)
+	if err != nil {
+		// fmt.Println(err.Error(), query)
+		if err.Error() == "pq: null value in column \"parent\" violates not-null constraint" {
+			// "pq: null value in column \"thread\" violates not-null constraint" {
+			w.WriteHeader(http.StatusConflict)
+			w.Write(conflict("Parent post was created in another thread"))
+			return
+		}
+		if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
+			fmt.Println(err.Error(), query)
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find post author by nickname:"))
+			return
+		}
+		w.WriteHeader(http.StatusBadGateway)
+		return
+	}
+	defer rows.Close()
+
+	number := 0
+	for rows.Next() {
+		post := posts[number]
+		rows.Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
+		fmt.Println(post)
+		number++
+	}
+
+	// err := database.DB.QueryRow().Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
+	// if err != nil {
+	// 	fmt.Println("!!!!!!!!!!!!!!!!!!!", err.Error())
+	// 	if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
+	// 		w.WriteHeader(http.StatusNotFound)
+	// 		// w.Write(conflict("Can't find post author by nickname:" + post.Author))
+	// 		return
+	// 	}
+	// }
 
 	jsonPosts, _ := json.Marshal(posts)
 	w.WriteHeader(http.StatusCreated)

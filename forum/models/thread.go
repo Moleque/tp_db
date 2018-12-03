@@ -95,7 +95,7 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		}
 	}
 
-	database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, nickname, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	database.DB.QueryRow(updateThreadsCount, forum).Scan()
 
 	jsonThread, _ := json.Marshal(thread)

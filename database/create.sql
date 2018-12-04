@@ -57,17 +57,17 @@ CREATE TABLE votes (
 	CONSTRAINT unique_votes UNIQUE (thread_id, username)
 );
 
+-- ==========================
 
 CREATE OR REPLACE FUNCTION create_post() RETURNS TRIGGER AS
 $post_trigger$
 	BEGIN
-		IF (NEW.parent = 0)
-			THEN 
-				NEW.path = ARRAY[NEW.id];
-				NEW.root = NEW.id;
-			ELSE 
-				NEW.path = (SELECT posts.path || NEW.id FROM posts WHERE id = NEW.parent);
-				NEW.root = NEW.path[1];
+		IF (NEW.parent = 0) THEN 
+            NEW.path = ARRAY[NEW.id];
+            NEW.root = NEW.id;
+        ELSE 
+            NEW.path = (SELECT posts.path || NEW.id FROM posts WHERE id = NEW.parent);
+            NEW.root = NEW.path[1];
 		END IF;
 		
         UPDATE forums SET posts = posts + 1 
@@ -77,21 +77,42 @@ $post_trigger$
 $post_trigger$
 LANGUAGE plpgsql;
 
--- CREATE OR REPLACE FUNCTION create_vote() RETURNS TRIGGER AS
--- $vote_trigger$
--- 	BEGIN
---         UPDATE threads SET votes = votes + NEW.value
---         WHERE id = NEW.thread_id;
---         RETURN NEW;
--- 	END;
--- $vote_trigger$
--- LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_vote() RETURNS TRIGGER AS
+$create_vote_trigger$
+    BEGIN
+        UPDATE threads SET votes = votes + NEW.value
+        WHERE id = NEW.thread_id;
+        RETURN NEW;
+    END;
+$create_vote_trigger$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_vote() RETURNS TRIGGER AS
+$update_vote_trigger$
+	BEGIN
+        IF (OLD.value = 1 AND NEW.value = -1) THEN
+            UPDATE threads SET votes = votes - 2
+            WHERE id = NEW.thread_id;
+        END IF;
+        IF (OLD.value = -1 AND NEW.value = 1) THEN
+            UPDATE threads SET votes = votes + 2
+            WHERE id = NEW.thread_id;
+        END IF;
+        RETURN NEW;
+	END;
+$update_vote_trigger$
+LANGUAGE plpgsql;
+
 
 DROP TRIGGER IF EXISTS post_trigger ON posts;
 CREATE TRIGGER post_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_post();
 
-DROP TRIGGER IF EXISTS vote_trigger ON votes;
-CREATE TRIGGER vote_trigger BEFORE INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE create_vote();
+DROP TRIGGER IF EXISTS create_vote_trigger ON votes;
+CREATE TRIGGER create_vote_trigger BEFORE INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE create_vote();
+
+DROP TRIGGER IF EXISTS update_vote_triggerr ON votes;
+CREATE TRIGGER update_vote_trigger BEFORE UPDATE ON votes FOR EACH ROW EXECUTE PROCEDURE update_vote();
 
 -- CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 -- SELECT pg_stat_statements_reset();

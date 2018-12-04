@@ -124,16 +124,6 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		number++
 	}
 
-	// err := database.DB.QueryRow().Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
-	// if err != nil {
-	// 	fmt.Println("!!!!!!!!!!!!!!!!!!!", err.Error())
-	// 	if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
-	// 		w.WriteHeader(http.StatusNotFound)
-	// 		// w.Write(conflict("Can't find post author by nickname:" + post.Author))
-	// 		return
-	// 	}
-	// }
-
 	jsonPosts, _ := json.Marshal(posts)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonPosts)

@@ -56,45 +56,33 @@ func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	//проверка наличия данного пользователя
-	user := &User{}
-	database.DB.QueryRow(selectUserByNickname, vote.Nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
-	if isEmpty(user.Nickname) == nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(conflict("Can't find user by nickname:" + slugId))
-		return
-	}
-
 	//проверка наличия голоса на данный момент
-	var value int32
-	database.DB.QueryRow(selectVoice, thread.Id, vote.Nickname).Scan(&value)
+	var voice int32
+	database.DB.QueryRow(selectVoice, thread.Id, vote.Nickname).Scan(&voice)
 
-	//ОПТИМИЗАЦИЯ: создание триггера
-	switch value {
-	case 0:
+	if voice == 0 {
 		//создание голоса пользователя
 		if err := database.DB.QueryRow(createVote, thread.Id, vote.Nickname, vote.Voice).Scan(&vote.Nickname, &vote.Voice); err != nil {
+			if err.Error() == "pq: insert or update on table \"votes\" violates foreign key constraint \"votes_username_fkey\"" {
+				w.WriteHeader(http.StatusNotFound)
+				w.Write(conflict("Can't find post author by nickname:"))
+				return
+			}
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
-		//добавление голоса к ветке
-		if err := database.DB.QueryRow(addVoteToThread, thread.Id, vote.Voice).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes); err != nil {
-			w.WriteHeader(http.StatusBadGateway)
-			return
+	} else {
+		value := voice
+		if voice == 1 && vote.Voice == -1 {
+			value = -2
 		}
-	case 1:
-		if vote.Voice < 0 {
-			database.DB.QueryRow(updateVoice, thread.Id, vote.Nickname, -2).Scan(&vote.Voice)
-			database.DB.QueryRow(updateVotes, thread.Id, -2).Scan(&vote.Nickname, &vote.Voice)
-			database.DB.QueryRow(selectThreadById, thread.Id).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+		if voice == -1 && vote.Voice == 1 {
+			value = 1
 		}
-	case -1:
-		if vote.Voice > 0 {
-			database.DB.QueryRow(updateVoice, thread.Id, vote.Nickname, 2).Scan(&vote.Nickname, &vote.Voice)
-			database.DB.QueryRow(updateVotes, thread.Id, 2).Scan(&vote.Nickname, &vote.Voice)
-			database.DB.QueryRow(selectThreadById, thread.Id).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-		}
+		database.DB.QueryRow(updateVoice, thread.Id, vote.Nickname, value).Scan(&vote.Voice)
 	}
+
+	database.DB.QueryRow(selectThreadById, thread.Id).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 
 	jsonThread, _ := json.Marshal(thread)
 	w.WriteHeader(http.StatusOK)

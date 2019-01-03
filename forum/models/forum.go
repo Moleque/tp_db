@@ -7,7 +7,6 @@ import (
 	"tp_db/forum/database"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/lib/pq"
 )
 
 type Forum struct {
@@ -20,7 +19,8 @@ type Forum struct {
 
 const createForum = `
 	INSERT INTO forums (slug, title, username)
-	VALUES ($1, $2, $3) RETURNING slug, title, username, threads, posts`
+	VALUES ($1, $2, (SELECT nickname FROM users WHERE nickname = $3))
+	RETURNING slug, title, username, threads, posts`
 
 const selectForum = `
 	SELECT slug, title, username, threads, posts
@@ -41,21 +41,20 @@ const selectForumUsers = `
 
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	forum := &Forum{}
 	if decode(r.Body, forum) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	var nickname, temp string
-	if database.DB.QueryRow(selectUserByNickname, forum.User).Scan(&temp, &nickname, &temp, &temp) != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(conflict("Can't find user by nickname:" + forum.User))
-		return
-	}
-
-	err := database.DB.QueryRow(createForum, forum.Slug, forum.Title, nickname).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
-	if err, ok := err.(*pq.Error); ok {
-		if err.Code.Name() == "unique_violation" {
+	err := database.DB.QueryRow(createForum, forum.Slug, forum.Title, forum.User).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
+	if err != nil {
+		if err.Error() == "pq: нулевое значение в столбце \"username\" нарушает ограничение NOT NULL" || err.Error() == "pq: null value in column \"username\" violates not-null constraint" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find user by nickname:" + forum.User))
+			return
+		}
+		if err.Error() == "pq: повторяющееся значение ключа нарушает ограничение уникальности \"forums_slug_key\"" || err.Error() == "pq: duplicate key value violates unique constraint \"forums_slug_key\"" {
 			if database.DB.QueryRow(selectForum, forum.Slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) == nil {
 				jsonForum, _ := json.Marshal(forum)
 				w.WriteHeader(http.StatusConflict)
@@ -66,6 +65,7 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		w.WriteHeader(http.StatusBadGateway)
 		return
 	}
+
 	jsonForum, _ := json.Marshal(forum)
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonForum)

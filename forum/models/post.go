@@ -98,15 +98,12 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	rows, err := template.Query(vals...)
 	if err != nil {
-		// fmt.Println(err.Error(), query)
-		if err.Error() == "pq: null value in column \"parent\" violates not-null constraint" {
-			// "pq: null value in column \"thread\" violates not-null constraint" {
+		if err.Error() == "pq: нулевое значение в столбце \"parent\" нарушает ограничение NOT NULL" || err.Error() == "pq: null value in column \"parent\" violates not-null constraint" {
 			w.WriteHeader(http.StatusConflict)
 			w.Write(conflict("Parent post was created in another thread"))
 			return
 		}
-		if err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
-			fmt.Println(err.Error(), query)
+		if err.Error() == "pq: INSERT или UPDATE в таблице \"posts\" нарушает ограничение внешнего ключа \"posts_username_fkey\"" || err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find post author by nickname:"))
 			return
@@ -120,7 +117,6 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	for rows.Next() {
 		post := posts[number]
 		rows.Scan(&post.Id, &post.Created, &post.Message, &post.Author, &post.Forum, &post.Thread, &post.Parent)
-		fmt.Println(post)
 		number++
 	}
 

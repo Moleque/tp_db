@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"tp_db/forum/database"
@@ -63,7 +64,8 @@ func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params
 	if voice == 0 {
 		//создание голоса пользователя
 		if err := database.DB.QueryRow(createVote, thread.Id, vote.Nickname, vote.Voice).Scan(&vote.Nickname, &vote.Voice); err != nil {
-			if err.Error() == "pq: insert or update on table \"votes\" violates foreign key constraint \"votes_username_fkey\"" {
+			fmt.Println(err)
+			if err.Error() == "pq: INSERT или UPDATE в таблице \"votes\" нарушает ограничение внешнего ключа \"votes_username_fkey\"" || err.Error() == "pq: insert or update on table \"votes\" violates foreign key constraint \"votes_username_fkey\"" {
 				w.WriteHeader(http.StatusNotFound)
 				w.Write(conflict("Can't find post author by nickname:"))
 				return

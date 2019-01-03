@@ -59,6 +59,16 @@ CREATE TABLE votes (
 
 -- ==========================
 
+CREATE OR REPLACE FUNCTION create_thread() RETURNS TRIGGER AS
+$thread_trigger$
+	BEGIN
+        UPDATE forums SET threads = threads + 1
+	    WHERE slug = NEW.forum;
+        RETURN NEW;
+	END;
+$thread_trigger$
+LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION create_post() RETURNS TRIGGER AS
 $post_trigger$
 	BEGIN
@@ -104,6 +114,8 @@ $update_vote_trigger$
 $update_vote_trigger$
 LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS thread_trigger ON posts;
+CREATE TRIGGER thread_trigger BEFORE INSERT ON threads FOR EACH ROW EXECUTE PROCEDURE create_thread();
 
 DROP TRIGGER IF EXISTS post_trigger ON posts;
 CREATE TRIGGER post_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_post();

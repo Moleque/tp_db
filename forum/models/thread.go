@@ -23,7 +23,8 @@ type Thread struct {
 
 const createThread = `
 	INSERT INTO threads (slug, created, title, message, username, forum)
-	VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, slug, created, title, message, username, forum, votes`
+	VALUES ($1, $2, $3, $4, $5, (SELECT slug FROM forums WHERE slug = $6))
+	RETURNING id, slug, created, title, message, username, forum, votes`
 
 const countThread = `
 	SELECT COUNT(*)
@@ -51,12 +52,6 @@ const updateThread = `
 	WHERE id = $1
 	RETURNING id, slug, created, title, message, username, forum, votes`
 
-//ОПТИМИЗАЦИЯ: триггер
-const updateThreadsCount = `
-	UPDATE forums
-	SET threads = threads + 1
-	WHERE slug = $1`
-
 func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	forum := params.ByName("path1")
@@ -65,24 +60,6 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	if decode(r.Body, thread) != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-
-	//проверка, что существует такой пользователь
-	var nickname, temp string
-	if database.DB.QueryRow(selectUserByNickname, thread.Author).Scan(&temp, &nickname, &temp, &temp) != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(conflict("Can't find user by nickname:" + thread.Author))
-		return
-	}
-
-	//проверка, что существует такой форум
-	var check string
-	database.DB.QueryRow(selectForum, forum).Scan(&check, &temp, &temp, &temp, &temp)
-	if isEmpty(check) == nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(conflict("Can't find thread forum by slug:" + forum))
-		return
-	}
-	forum = check
 
 	//проверка, существует-ли уже данный thread
 	if isEmpty(thread.Slug) != nil {
@@ -95,8 +72,25 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		}
 	}
 
-	database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-	database.DB.QueryRow(updateThreadsCount, forum).Scan()
+	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	if err != nil {
+		if err.Error() == "pq: insert or update on table \"threads\" violates foreign key constraint \"threads_username_fkey\"" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find user by nickname:"))
+			return
+		}
+		if err.Error() == "pq: INSERT или UPDATE в таблице \"threads\" нарушает ограничение внешнего ключа \"threads_username_fkey\"" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find thread author by nickname:" + thread.Author))
+			return
+		}
+		//проверка, что существует такой форум
+		if err.Error() == "pq: нулевое значение в столбце \"forum\" нарушает ограничение NOT NULL" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find thread forum by slug:" + thread.Slug))
+			return
+		}
+	}
 
 	jsonThread, _ := json.Marshal(thread)
 	w.WriteHeader(http.StatusCreated)

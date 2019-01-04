@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
 	"tp_db/forum/database"
 )
@@ -34,9 +35,22 @@ func isEmpty(str string) interface{} {
 
 func getThreadBySlugId(slugId string) Thread {
 	thread := &Thread{}
-	database.DB.QueryRow(selectThreadById, slugId).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-	if isEmpty(thread.Slug) == nil {
+	_, err := strconv.Atoi(slugId)
+	if err == nil {
+		database.DB.QueryRow(selectThreadById, slugId).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	} else {
 		database.DB.QueryRow(selectThreadBySlug, slugId).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	}
 	return *thread
+}
+
+func getThreadIdQuery(slugId string) string {
+	var query string
+	_, err := strconv.Atoi(slugId)
+	if err == nil {
+		query = slugId
+	} else {
+		query = "(SELECT id FROM threads WHERE slug = '" + slugId + "')"
+	}
+	return query
 }

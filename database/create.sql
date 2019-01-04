@@ -109,7 +109,7 @@ $update_vote_trigger$
             UPDATE threads SET votes = votes + 2
             WHERE id = NEW.thread_id;
         END IF;
-        RETURN NEW;
+        RETURN OLD;
 	END;
 $update_vote_trigger$
 LANGUAGE plpgsql;
@@ -121,10 +121,10 @@ DROP TRIGGER IF EXISTS post_trigger ON posts;
 CREATE TRIGGER post_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_post();
 
 DROP TRIGGER IF EXISTS create_vote_trigger ON votes;
-CREATE TRIGGER create_vote_trigger BEFORE INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE create_vote();
+CREATE TRIGGER create_vote_trigger AFTER INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE create_vote();
 
 DROP TRIGGER IF EXISTS update_vote_triggerr ON votes;
-CREATE TRIGGER update_vote_trigger BEFORE UPDATE ON votes FOR EACH ROW EXECUTE PROCEDURE update_vote();
+CREATE TRIGGER update_vote_trigger AFTER UPDATE ON votes FOR EACH ROW EXECUTE PROCEDURE update_vote();
 
 -- CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 -- SELECT pg_stat_statements_reset();

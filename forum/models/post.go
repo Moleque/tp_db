@@ -62,6 +62,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	thread := getThreadBySlugId(slugId)
 	//проверка, что существует такая ветка
 	if thread.Slug == "" {
+		fmt.Println("NF1")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(conflict("Can't find post thread by id:" + slugId))
 		return
@@ -83,6 +84,9 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	createTime := time.Now() //время для всех постов
 	iterator := 0
+
+	database.DB.Exec("SET LOCAL synchronous_commit TO OFF")
+
 	for _, post := range posts {
 		shift := iterator * 6
 		parentVal := fmt.Sprintf("$%d", shift+6)
@@ -104,6 +108,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 			return
 		}
 		if err.Error() == "pq: INSERT или UPDATE в таблице \"posts\" нарушает ограничение внешнего ключа \"posts_username_fkey\"" || err.Error() == "pq: insert or update on table \"posts\" violates foreign key constraint \"posts_username_fkey\"" {
+			fmt.Println("NF2")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find post author by nickname:"))
 			return

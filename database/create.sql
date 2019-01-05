@@ -130,3 +130,7 @@ CREATE TRIGGER update_vote_trigger AFTER UPDATE ON votes FOR EACH ROW EXECUTE PR
 -- SELECT pg_stat_statements_reset();
 
 -- SELECT * FROM pg_stat_statements Order by total_time, max_time;
+
+CREATE INDEX IF NOT EXISTS indx_users_nickname ON users (nickname);
+CREATE INDEX IF NOT EXISTS indx_forums_slug ON forums (slug);
+CREATE INDEX IF NOT EXISTS indx_threads_slug ON threads (slug);

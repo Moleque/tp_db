@@ -134,3 +134,7 @@ CREATE TRIGGER update_vote_trigger AFTER UPDATE ON votes FOR EACH ROW EXECUTE PR
 CREATE INDEX IF NOT EXISTS indx_users_nickname ON users (nickname);
 CREATE INDEX IF NOT EXISTS indx_forums_slug ON forums (slug);
 CREATE INDEX IF NOT EXISTS indx_threads_slug ON threads (slug);
+
+CREATE INDEX IF NOT EXISTS indx_posts_id_created ON posts (id, created);
+CREATE INDEX IF NOT EXISTS indx_posts_thread_id_created ON posts (thread, id, created);
+CREATE INDEX IF NOT EXISTS indx_posts_parent_thread ON posts (parent, thread);

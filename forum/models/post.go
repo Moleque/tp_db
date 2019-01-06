@@ -84,7 +84,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	createTime := time.Now() //время для всех постов
 	iterator := 0
 
-	database.DB.Exec("SET LOCAL synchronous_commit TO OFF") //???
+	// database.DB.Exec("SET LOCAL synchronous_commit TO OFF") //???
 
 	for _, post := range posts {
 		shift := iterator * 6

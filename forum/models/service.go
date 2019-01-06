@@ -16,36 +16,21 @@ type Counts struct {
 	Thread int32 `json:"thread"`
 }
 
-const selectForumsCount = `
-	SELECT COUNT(*)
-	FROM forums`
-
-const selectPostsCount = `
-	SELECT COUNT(*)
-	FROM posts`
-
-const selectThreadsCount = `
-	SELECT COUNT(*)
-	FROM threads`
-
-const selectUsersCount = `
-	SELECT COUNT(*)
-	FROM users`
+const selectCounts = `
+	SELECT * 
+	FROM (SELECT COUNT(*) FROM forums) forums,
+		(SELECT COUNT(*) FROM posts) posts,
+		(SELECT COUNT(*) FROM threads) threads,
+		(SELECT COUNT(*) FROM users) users`
 
 const deleteData = `
-	TRUNCATE TABLE forums CASCADE;
-	TRUNCATE TABLE posts CASCADE;
-	TRUNCATE TABLE threads CASCADE;
-	TRUNCATE TABLE users CASCADE;`
+	TRUNCATE TABLE users, forums, threads, posts, votes, members CASCADE`
 
 func Status(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 
 	counts := &Counts{}
-	database.DB.QueryRow(selectForumsCount).Scan(&counts.Forum)
-	database.DB.QueryRow(selectPostsCount).Scan(&counts.Post)
-	database.DB.QueryRow(selectThreadsCount).Scan(&counts.Thread)
-	database.DB.QueryRow(selectUsersCount).Scan(&counts.User)
+	database.DB.QueryRow(selectCounts).Scan(&counts.Forum, &counts.Post, &counts.Thread, &counts.User)
 
 	jsonCounts, _ := json.Marshal(counts)
 	w.WriteHeader(http.StatusOK)
@@ -55,14 +40,5 @@ func Status(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 func Clear(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	database.DB.QueryRow(deleteData).Scan()
-
-	counts := &Counts{}
-	database.DB.QueryRow(selectForumsCount).Scan(&counts.Forum)
-	database.DB.QueryRow(selectPostsCount).Scan(&counts.Post)
-	database.DB.QueryRow(selectThreadsCount).Scan(&counts.Thread)
-	database.DB.QueryRow(selectUsersCount).Scan(&counts.User)
-
-	jsonCounts, _ := json.Marshal(counts)
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonCounts)
 }

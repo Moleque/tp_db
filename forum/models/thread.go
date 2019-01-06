@@ -63,7 +63,7 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	}
 
 	//проверка, существует-ли уже данный thread
-	if isEmpty(thread.Slug) != nil {
+	if isEmpty(thread.Author) != nil {
 		database.DB.QueryRow(selectThreadBySlug, thread.Slug).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 		if thread.Id != 0 {
 			jsonThread, _ := json.Marshal(thread)
@@ -118,7 +118,7 @@ func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Para
 func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	thread := getThreadBySlugId(params.ByName("slug_or_id"))
-	if isEmpty(thread.Slug) == nil {
+	if isEmpty(thread.Author) == nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(conflict("Can't find thread by slug:" + thread.Slug))
 		return

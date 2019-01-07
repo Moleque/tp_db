@@ -31,7 +31,7 @@ const selectForum = `
 const selectForumUsers = `
 	SELECT DISTINCT *
 	FROM (SELECT email, nickname, fullname, about
-		FROM members JOIN users ON (members.username = users.nickname AND members.forum = $1)) AS users`
+		FROM members JOIN users ON (members.username = users.nickname AND members.forum = (SELECT slug FROM forums WHERE slug = $1))) AS users`
 
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -122,17 +122,6 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slug := params.ByName("slug")
 
-	//++++
-	forum := &Forum{}
-	database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
-	//проверка,что форум существует
-	if isEmpty(forum.Title) == nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write(conflict("Can't find forum by slug:" + slug))
-		return
-	}
-	//++++
-
 	query := paramsGetUsers(selectForumUsers, r)
 	fmt.Println(query)
 	rows, err := database.DB.Query(query, slug)
@@ -147,6 +136,16 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		user := &User{}
 		rows.Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
 		users = append(users, user)
+	}
+
+	if len(users) == 0 {
+		//проверка,что форум существует
+		forum := &Forum{}
+		if database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts) != nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write(conflict("Can't find forum by slug:" + slug))
+			return
+		}
 	}
 
 	jsonUsers, _ := json.Marshal(users)

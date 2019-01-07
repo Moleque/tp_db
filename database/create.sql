@@ -123,15 +123,38 @@ $update_vote_trigger$
 $update_vote_trigger$
 LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION create_member_post() RETURNS TRIGGER AS
+$create_member_post_trigger$
+	BEGIN
+        INSERT INTO members (forum, username)
+	    VALUES (NEW.forum, NEW.username) ON CONFLICT DO NOTHING;
+        RETURN NEW;
+	END;
+$create_member_post_trigger$
+LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION create_member_thread() RETURNS TRIGGER AS
+$create_member_thread_trigger$
+	BEGIN
+        INSERT INTO members (forum, username)
+	    VALUES (NEW.forum, NEW.username) ON CONFLICT DO NOTHING;
+        RETURN NEW;
+	END;
+$create_member_thread_trigger$
+LANGUAGE plpgsql;
+
 DROP TRIGGER IF EXISTS thread_trigger ON posts;
 DROP TRIGGER IF EXISTS post_trigger ON posts;
 DROP TRIGGER IF EXISTS create_vote_trigger ON votes;
 DROP TRIGGER IF EXISTS update_vote_triggerr ON votes;
+DROP TRIGGER IF EXISTS create_member_trigger ON posts;
 
 CREATE TRIGGER thread_trigger BEFORE INSERT ON threads FOR EACH ROW EXECUTE PROCEDURE create_thread();
 CREATE TRIGGER post_trigger BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_post();
 CREATE TRIGGER create_vote_trigger AFTER INSERT ON votes FOR EACH ROW EXECUTE PROCEDURE create_vote();
 CREATE TRIGGER update_vote_trigger AFTER UPDATE ON votes FOR EACH ROW EXECUTE PROCEDURE update_vote();
+CREATE TRIGGER create_member_post_trigger AFTER INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE create_member_post();
+CREATE TRIGGER create_member_thread_trigger AFTER INSERT ON threads FOR EACH ROW EXECUTE PROCEDURE create_member_thread();
 
 
 -- ===============================

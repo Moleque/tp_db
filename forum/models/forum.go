@@ -31,14 +31,7 @@ const selectForum = `
 const selectForumUsers = `
 	SELECT DISTINCT *
 	FROM (SELECT email, nickname, fullname, about
-		FROM forums JOIN threads ON (forums.slug = threads.forum) 
-		JOIN users ON (users.nickname = threads.username)
-		WHERE forums.slug = $1 
-		UNION
-		SELECT email, nickname, fullname, about
-		FROM forums JOIN posts ON (forums.slug = posts.forum) 
-		JOIN users ON (users.nickname = posts.username)
-		WHERE forums.slug = $1) AS users`
+		FROM members JOIN users ON (members.username = users.nickname AND members.forum = $1)) AS users`
 
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -129,6 +122,7 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slug := params.ByName("slug")
 
+	//++++
 	forum := &Forum{}
 	database.DB.QueryRow(selectForum, slug).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
 	//проверка,что форум существует
@@ -137,10 +131,13 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		w.Write(conflict("Can't find forum by slug:" + slug))
 		return
 	}
+	//++++
 
 	query := paramsGetUsers(selectForumUsers, r)
+	fmt.Println(query)
 	rows, err := database.DB.Query(query, slug)
 	if err != nil {
+		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -35,6 +35,10 @@ const createPost = `
 	INSERT INTO posts (created, message, username, forum, thread, parent) 
 	VALUES `
 
+const createMember = `
+	INSERT INTO members (forum, username)
+	VALUES ($1, $2)	ON CONFLICT DO NOTHING`
+
 const selectMainPost = `
 	SELECT id, created, message, username, forum, thread, parent
 	FROM posts
@@ -78,6 +82,8 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 		return
 	}
 
+	// database.DB.QueryRow(createMember, thread.Forum, posts[0].Author).Scan()
+
 	query := createPost
 	vals := []interface{}{}
 
@@ -99,6 +105,7 @@ func PostsCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	rows, err := template.Query(vals...)
 	if err != nil {
+		fmt.Println(err)
 		if err.Error() == "pq: нулевое значение в столбце \"parent\" нарушает ограничение NOT NULL" || err.Error() == "pq: null value in column \"parent\" violates not-null constraint" {
 			w.WriteHeader(http.StatusConflict)
 			w.Write(conflict("Parent post was created in another thread"))

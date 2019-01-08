@@ -56,7 +56,6 @@ func ThreadVote(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	query := fmt.Sprintf(createVote, threadIdQuery)
 	if err := database.DB.QueryRow(query, vote.Nickname, vote.Voice).Scan(&vote.Nickname, &vote.Voice); err != nil {
-		fmt.Println(err)
 		if err.Error() == "pq: INSERT или UPDATE в таблице \"votes\" нарушает ограничение внешнего ключа \"votes_username_fkey\"" || err.Error() == "pq: insert or update on table \"votes\" violates foreign key constraint \"votes_username_fkey\"" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find post author by nickname:"))

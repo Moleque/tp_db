@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -75,7 +74,6 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 
 	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	if err != nil {
-		fmt.Println(err)
 		if err.Error() == "pq: insert or update on table \"threads\" violates foreign key constraint \"threads_username_fkey\"" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find user by nickname:"))

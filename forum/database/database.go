@@ -15,7 +15,6 @@ type DataBase struct {
 var DB = &DataBase{}
 
 func (db *DataBase) Connect(dsn string) {
-	var err error
 	db.instance, _ = sql.Open("postgres", dsn)
 	db.instance.SetMaxOpenConns(10)
 	db.instance.Ping()

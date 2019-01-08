@@ -169,13 +169,16 @@ DROP INDEX IF EXISTS indx_posts_thread_parent_root;
 DROP INDEX IF EXISTS indx_posts_thread_parent_id;
 DROP INDEX IF EXISTS indx_members_forum_username;
 
-CREATE INDEX indx_users_nickname ON users (nickname);
-CREATE INDEX indx_forums_slug ON forums (slug);
+
+CREATE INDEX indx_users_nickname ON users (nickname); -- !
+CREATE INDEX indx_forums_slug ON forums (slug); -- !
 CREATE INDEX indx_threads_slug ON threads (slug);
-CREATE INDEX indx_posts_root ON post (root);
+
+CREATE INDEX indx_posts_root ON posts (root);
 CREATE INDEX indx_posts_id_thread ON posts (id, thread);
 CREATE INDEX indx_posts_thread_parent_path ON posts (thread, parent, path);
 CREATE INDEX indx_posts_thread_parent_root ON posts (thread, parent, root);
-CREATE INDEX indx_posts_thread_parent_id ON posts (thread, parent, id);
-CREATE INDEX indx_members_forum_username ON members (forum, username);
+CREATE INDEX indx_posts_thread_parent_id ON posts (thread, parent, id); -- !
+
+CREATE INDEX indx_members_forum_username ON members (forum, username); -- ?
 

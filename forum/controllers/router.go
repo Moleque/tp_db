@@ -24,7 +24,7 @@ func NewRouter() *httprouter.Router {
 	for _, route := range routes {
 		var handler httprouter.Handle
 		handler = route.HandlerFunc
-		handler = Logger(handler, route.Name)
+		// handler = Logger(handler, route.Name)
 		router.Handle(route.Method, route.Pattern, handler)
 	}
 	return router

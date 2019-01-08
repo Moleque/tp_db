@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"tp_db/forum/database"
@@ -42,7 +41,6 @@ func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Param
 
 	err := database.DB.QueryRow(createForum, forum.Slug, forum.Title, forum.User).Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Threads, &forum.Posts)
 	if err != nil {
-		fmt.Println(err)
 		if err.Error() == "pq: нулевое значение в столбце \"username\" нарушает ограничение NOT NULL" || err.Error() == "pq: null value in column \"username\" violates not-null constraint" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find user by nickname:" + forum.User))
@@ -122,10 +120,8 @@ func ForumGetUsers(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	slug := params.ByName("slug")
 
 	query := paramsGetUsers(selectForumUsers, r)
-	fmt.Println(query)
 	rows, err := database.DB.Query(query, slug)
 	if err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

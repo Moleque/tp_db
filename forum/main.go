@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"tp_db/forum/database"
@@ -23,8 +22,5 @@ func main() {
 	database.DB.Connect(dsn)
 	defer database.DB.Disconnect()
 
-	log.Printf("try to start http server http://127.0.0.1:5000")
-	if err := http.ListenAndServe(":5000", router); err != nil {
-		log.Fatalf("listening error:%s", err)
-	}
+	http.ListenAndServe(":5000", router)
 }

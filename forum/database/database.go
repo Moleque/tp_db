@@ -3,7 +3,6 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -17,23 +16,15 @@ var DB = &DataBase{}
 
 func (db *DataBase) Connect(dsn string) {
 	var err error
-	db.instance, err = sql.Open("postgres", dsn)
-	if err != nil {
-		fmt.Errorf("database connecting:%s", err)
-	}
+	db.instance, _ = sql.Open("postgres", dsn)
 	db.instance.SetMaxOpenConns(10)
-	err = db.instance.Ping()
-	if err != nil {
-		fmt.Errorf("database connecting:%s", err)
-	}
+	db.instance.Ping()
 	db.connection = true
-	log.Println("database was connected")
 }
 
 func (db *DataBase) Disconnect() {
 	db.instance.Close()
 	db.connection = false
-	log.Println("database was disconnected")
 }
 
 func (db *DataBase) Query(query string, args ...interface{}) (*sql.Rows, error) {

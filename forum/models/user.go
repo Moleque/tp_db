@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"regexp"
 
@@ -112,7 +111,6 @@ func UserUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Params
 
 	err := database.DB.QueryRow(updateUser, isEmpty(user.Email), isEmpty(user.Fullname), isEmpty(user.About), nickname).Scan(&user.Email, &user.Nickname, &user.Fullname, &user.About)
 	if err, ok := err.(*pq.Error); ok {
-		log.Println(err.Code.Name())
 		if err.Code.Name() == "unique_violation" {
 			var emailOwner string
 			if database.DB.QueryRow(selectNicknameByEmail, user.Email).Scan(&emailOwner) == nil {

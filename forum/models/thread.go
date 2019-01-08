@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -48,8 +49,8 @@ const selectThreadBySlug = `
 
 const updateThread = `
 	UPDATE threads
-	SET title = COALESCE($2, title), message = COALESCE($3, message)
-	WHERE id = $1
+	SET title = COALESCE($1, title), message = COALESCE($2, message)
+	WHERE id = %s
 	RETURNING id, slug, created, title, message, username, forum, votes`
 
 func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -61,18 +62,14 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	//проверка, существует-ли уже данный thread
+	var slug interface{}
 	if isEmpty(thread.Slug) != nil {
-		database.DB.QueryRow(selectThreadBySlug, thread.Slug).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
-		if thread.Id != 0 {
-			jsonThread, _ := json.Marshal(thread)
-			w.WriteHeader(http.StatusConflict)
-			w.Write(jsonThread)
-			return
-		}
+		slug = thread.Slug
+	} else {
+		slug = nil
 	}
 
-	err := database.DB.QueryRow(createThread, thread.Slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+	err := database.DB.QueryRow(createThread, slug, thread.Created, thread.Title, thread.Message, thread.Author, forum).Scan(&thread.Id, &thread.Forum, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	if err != nil {
 		if err.Error() == "pq: insert or update on table \"threads\" violates foreign key constraint \"threads_username_fkey\"" {
 			w.WriteHeader(http.StatusNotFound)
@@ -88,6 +85,14 @@ func ThreadCreate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 		if err.Error() == "pq: нулевое значение в столбце \"forum\" нарушает ограничение NOT NULL" || err.Error() == "pq: null value in column \"forum\" violates not-null constraint" {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write(conflict("Can't find thread forum by slug:" + thread.Slug))
+			return
+		}
+		//проверка, существует-ли уже данный thread
+		if err.Error() == "pq: повторяющееся значение ключа нарушает ограничение уникальности \"threads_slug_key\"" || err.Error() == "pq: duplicate key value violates unique constraint \"threads_slug_key\"" {
+			database.DB.QueryRow(selectThreadBySlug, thread.Slug).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
+			jsonThread, _ := json.Marshal(thread)
+			w.WriteHeader(http.StatusConflict)
+			w.Write(jsonThread)
 			return
 		}
 	}
@@ -115,6 +120,7 @@ func ThreadGetOne(w http.ResponseWriter, r *http.Request, params httprouter.Para
 
 func ThreadGetPosts(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+
 	thread := getThreadBySlugId(params.ByName("slug_or_id"))
 	if isEmpty(thread.Author) == nil {
 		w.WriteHeader(http.StatusNotFound)
@@ -147,19 +153,19 @@ func ThreadUpdate(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	slugId := params.ByName("slug_or_id")
 
-	thread := getThreadBySlugId(slugId)
-	if isEmpty(thread.Forum) == nil {
+	querySlugId := getThreadIdQuery(slugId)
+
+	thread := &Thread{}
+	if decode(r.Body, thread) != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
+	query := fmt.Sprintf(updateThread, querySlugId)
+	if err := database.DB.QueryRow(query, isEmpty(thread.Title), isEmpty(thread.Message)).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes); err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(conflict("Can't find thread by slug:" + slugId))
 		return
 	}
-
-	updatedThread := &Thread{}
-	if decode(r.Body, updatedThread) != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	database.DB.QueryRow(updateThread, thread.Id, isEmpty(updatedThread.Title), isEmpty(updatedThread.Message)).Scan(&thread.Id, &thread.Slug, &thread.Created, &thread.Title, &thread.Message, &thread.Author, &thread.Forum, &thread.Votes)
 	jsonThread, _ := json.Marshal(thread)
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonThread)

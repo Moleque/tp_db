@@ -33,17 +33,17 @@ const countThread = `
 	WHERE forum = $1`
 
 const selectThread = `
-	SELECT id, slug, created, title, message, username, forum, votes
+	SELECT *
 	FROM threads
 	WHERE forum = $1`
 
 const selectThreadById = `
-	SELECT id, slug, created, title, message, username, forum, votes
+	SELECT *
 	FROM threads
 	WHERE id = $1`
 
 const selectThreadBySlug = `
-	SELECT id, slug, created, title, message, username, forum, votes
+	SELECT *
 	FROM threads
 	WHERE slug = $1`
 

@@ -29,9 +29,8 @@ const selectForum = `
 	WHERE slug = $1`
 
 const selectForumUsers = `
-	SELECT DISTINCT *
-	FROM (SELECT email, nickname, fullname, about
-		FROM members JOIN users ON (members.username = users.nickname AND members.forum = (SELECT slug FROM forums WHERE slug = $1))) AS users`
+	SELECT email, nickname, fullname, about
+	FROM members JOIN users ON members.username = users.nickname AND members.forum = $1`
 
 func ForumCreate(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -160,9 +159,9 @@ func paramsGetUsers(query string, r *http.Request) string {
 
 	if since != "" {
 		if order == "true" {
-			query += "\nWHERE users.nickname < '" + since + "'"
+			query += " AND users.nickname < '" + since + "'"
 		} else {
-			query += "\nWHERE users.nickname > '" + since + "'"
+			query += " AND users.nickname > '" + since + "'"
 		}
 	}
 	if order == "true" {

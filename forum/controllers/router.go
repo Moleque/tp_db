@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -32,7 +31,7 @@ func NewRouter() *httprouter.Router {
 }
 
 func Index(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	fmt.Fprintf(w, "Welcome to the forum!")
+	return
 }
 
 func RouterOfCreating(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
